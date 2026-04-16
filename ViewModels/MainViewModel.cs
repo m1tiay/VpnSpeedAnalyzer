@@ -2,7 +2,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 
 namespace VpnSpeedAnalyzer
@@ -16,35 +15,10 @@ namespace VpnSpeedAnalyzer
 
         public ObservableCollection<SpeedtestResult> Results { get; } = new();
 
-        private bool _showBestOnly;
-        public bool ShowBestOnly
-        {
-            get => _showBestOnly;
-            set
-            {
-                if (_showBestOnly != value)
-                {
-                    _showBestOnly = value;
-                    OnPropertyChanged(nameof(ShowBestOnly));
-                    RefreshResults();
-                }
-            }
-        }
-
-        public RelayCommand StartCommand { get; }
-        public RelayCommand StopCommand { get; }
-        public RelayCommand ExportCsvCommand { get; }
-        public RelayCommand ToggleBestOnlyCommand { get; }
-
         public MainViewModel()
         {
-            _monitor = new MonitorController();
+            _monitor = new MonitorController(this);
             _monitor.NewResult += Monitor_NewResult;
-
-            StartCommand = new RelayCommand(_ => Start());
-            StopCommand = new RelayCommand(_ => Stop());
-            ExportCsvCommand = new RelayCommand(_ => ExportCsv());
-            ToggleBestOnlyCommand = new RelayCommand(_ => ToggleBestOnly());
         }
 
         private void Monitor_NewResult(object? sender, SpeedtestResult r)
@@ -59,17 +33,7 @@ namespace VpnSpeedAnalyzer
         public void Start() => _monitor.Start();
         public void Stop() => _monitor.Stop();
 
-        public void ToggleBestOnly()
-        {
-            ShowBestOnly = !ShowBestOnly;
-        }
-
-        private void RefreshResults()
-        {
-            // Пока логика простая — можно расширить позже
-            // Сейчас просто уведомляем UI, что коллекция изменилась
-            OnPropertyChanged(nameof(Results));
-        }
+        public void ToggleBestOnly() { }
 
         public void ExportCsv()
         {
@@ -81,9 +45,7 @@ namespace VpnSpeedAnalyzer
                 sw.WriteLine("Timestamp,Ping,Jitter,Loss,Download,Upload");
 
                 foreach (var r in Results)
-                {
                     sw.WriteLine($"{r.Timestamp:O},{r.Ping},{r.Jitter},{r.Loss},{r.Download},{r.Upload}");
-                }
 
                 MessageBox.Show($"CSV saved: {path}");
             }
@@ -93,7 +55,7 @@ namespace VpnSpeedAnalyzer
             }
         }
 
-        protected void OnPropertyChanged(string name) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        public void Notify(string prop) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
     }
 }
