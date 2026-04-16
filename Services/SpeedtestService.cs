@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using VpnSpeedAnalyzer.Models;
+using VpnSpeedAnalyzer.Logic;
 
 namespace VpnSpeedAnalyzer.Services
 {
