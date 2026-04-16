@@ -50,27 +50,27 @@ namespace VpnSpeedAnalyzer
         {
             try
             {
+                // Создаём пустые графики БЕЗ Refresh()
                 _jitterPlot = JitterPlot.Plot.AddScatter(
-                    xs: Array.Empty<double>(),
-                    ys: Array.Empty<double>(),
+                    xs: new double[] { 0 },
+                    ys: new double[] { 0 },
                     color: System.Drawing.Color.DeepSkyBlue,
                     lineWidth: 2);
 
+                _pingPlot = PingPlot.Plot.AddScatter(
+                    xs: new double[] { 0 },
+                    ys: new double[] { 0 },
+                    color: System.Drawing.Color.OrangeRed,
+                    lineWidth: 2);
+
+                // Убираем авто-масштабирование до появления реальных данных
                 JitterPlot.Plot.Title("Jitter (ms)");
                 JitterPlot.Plot.XLabel("Test #");
                 JitterPlot.Plot.YLabel("ms");
-                JitterPlot.Refresh();
-
-                _pingPlot = PingPlot.Plot.AddScatter(
-                    xs: Array.Empty<double>(),
-                    ys: Array.Empty<double>(),
-                    color: System.Drawing.Color.OrangeRed,
-                    lineWidth: 2);
 
                 PingPlot.Plot.Title("Ping (ms)");
                 PingPlot.Plot.XLabel("Test #");
                 PingPlot.Plot.YLabel("ms");
-                PingPlot.Refresh();
             }
             catch (Exception ex)
             {
