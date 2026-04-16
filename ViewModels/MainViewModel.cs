@@ -23,8 +23,8 @@ namespace VpnSpeedAnalyzer
         private readonly MonitorController _monitor;
         private readonly ResultsManager _resultsManager;
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        public event EventHandler<SpeedtestResult> NewResultArrived;
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public event EventHandler<SpeedtestResult>? NewResultArrived;
 
         public MainViewModel()
         {
