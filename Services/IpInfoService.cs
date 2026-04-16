@@ -16,10 +16,12 @@ namespace VpnSpeedAnalyzer.Services
                 var json = await _http.GetStringAsync("https://ipapi.co/json/");
                 return JsonSerializer.Deserialize<IpInfo>(json);
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Write("IP API ERROR: " + ex.Message);
                 return null;
             }
+
         }
     }
 }
