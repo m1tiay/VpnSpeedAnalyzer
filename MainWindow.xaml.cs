@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using ScottPlot;
+using ScottPlot.Plottable;
 
 namespace VpnSpeedAnalyzer
 {
