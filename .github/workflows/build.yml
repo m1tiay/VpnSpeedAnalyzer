@@ -21,9 +21,6 @@ jobs:
       - name: Verify .NET installation
         run: dotnet --info
 
-      - name: Install Windows Desktop SDK
-        run: dotnet workload install windowsdesktop
-
       - name: Restore dependencies
         run: dotnet restore VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj
 
