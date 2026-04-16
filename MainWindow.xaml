@@ -4,109 +4,69 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VpnSpeedAnalyzer"
-        xmlns:scottplot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         Title="VPN Speed Analyzer"
-        Width="1100" Height="750"
-        WindowStartupLocation="CenterScreen"
-        Background="#FAFAFA">
+        Width="1100" Height="700"
+        WindowStartupLocation="CenterScreen">
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>     <!-- Верхняя панель -->
-            <RowDefinition Height="260"/>      <!-- Графики -->
-            <RowDefinition Height="*"/>        <!-- Таблица -->
-            <RowDefinition Height="Auto"/>     <!-- Кнопки -->
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
-        <Border Grid.Row="0" Padding="10" Background="#FFFFFF" CornerRadius="6"
-                BorderBrush="#DDDDDD" BorderThickness="1">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="20">
+        <!-- TOP PANEL -->
+        <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+            <TextBlock Text="IP:" FontWeight="Bold" Margin="0 0 10 0"/>
+            <TextBlock Text="{Binding CurrentIp}" Margin="0 0 20 0"/>
 
-                <TextBlock Text="IP:" FontWeight="Bold"/>
-                <TextBlock Text="{Binding CurrentIp}" />
+            <TextBlock Text="{Binding CurrentFlag}" FontSize="16" Margin="0 0 10 0"/>
+            <TextBlock Text="{Binding CurrentCountry}" Margin="0 0 20 0"/>
 
-                <TextBlock Text="{Binding CurrentFlag}" FontSize="18" />
+            <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 10 0"/>
+            <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 20 0"/>
 
-                <TextBlock Text="{Binding CurrentCountry}" />
+            <TextBlock Text="{Binding StatusText}" FontWeight="Bold" Foreground="DarkGreen"/>
+        </StackPanel>
 
-                <TextBlock Text="ASN:" FontWeight="Bold" Margin="20,0,0,0"/>
-                <TextBlock Text="{Binding CurrentAsn}" />
+        <!-- JITTER PLOT -->
+        <GroupBox Header="Jitter" Grid.Row="1" Margin="0 0 0 10">
+            <local:WpfPlot x:Name="JitterPlot"/>
+        </GroupBox>
 
-                <TextBlock Text="Status:" FontWeight="Bold" Margin="20,0,0,0"/>
-                <TextBlock Text="{Binding StatusText}" />
-            </StackPanel>
-        </Border>
+        <!-- PING PLOT -->
+        <GroupBox Header="Ping" Grid.Row="2" Margin="0 0 0 10">
+            <local:WpfPlot x:Name="PingPlot"/>
+        </GroupBox>
 
-        <!-- ГРАФИКИ -->
-        <Grid Grid.Row="1" Margin="0,10,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- RESULTS TABLE -->
+        <DataGrid Grid.Row="3"
+                  ItemsSource="{Binding Results}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  Margin="0 0 0 10">
 
-            <!-- JITTER -->
-            <Border Grid.Column="0" Margin="0,0,10,0" Background="#FFFFFF"
-                    CornerRadius="6" BorderBrush="#DDDDDD" BorderThickness="1">
-                <Grid>
-                    <TextBlock Text="Jitter (ms)" Margin="10" FontWeight="Bold"/>
-                    <scottplot:WpfPlot Name="JitterPlot" Margin="0,30,0,0"/>
-                </Grid>
-            </Border>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
+                <DataGridTextColumn Header="Country" Binding="{Binding Country}" Width="*"/>
+                <DataGridTextColumn Header="Ping" Binding="{Binding Ping}" Width="*"/>
+                <DataGridTextColumn Header="Jitter" Binding="{Binding Jitter}" Width="*"/>
+                <DataGridTextColumn Header="Loss" Binding="{Binding Loss}" Width="*"/>
+                <DataGridTextColumn Header="Download" Binding="{Binding Download}" Width="*"/>
+                <DataGridTextColumn Header="Upload" Binding="{Binding Upload}" Width="*"/>
+                <DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
 
-            <!-- PING -->
-            <Border Grid.Column="1" Margin="10,0,0,0" Background="#FFFFFF"
-                    CornerRadius="6" BorderBrush="#DDDDDD" BorderThickness="1">
-                <Grid>
-                    <TextBlock Text="Ping (ms)" Margin="10" FontWeight="Bold"/>
-                    <scottplot:WpfPlot Name="PingPlot" Margin="0,30,0,0"/>
-                </Grid>
-            </Border>
-        </Grid>
-
-        <!-- ТАБЛИЦА -->
-        <Border Grid.Row="2" Background="#FFFFFF" CornerRadius="6"
-                BorderBrush="#DDDDDD" BorderThickness="1">
-            <DataGrid ItemsSource="{Binding Results}"
-                      AutoGenerateColumns="False"
-                      HeadersVisibility="Column"
-                      CanUserAddRows="False"
-                      CanUserDeleteRows="False"
-                      IsReadOnly="True"
-                      GridLinesVisibility="None"
-                      RowHeight="28"
-                      FontSize="14">
-
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
-                    <DataGridTextColumn Header="Country" Binding="{Binding Country}" Width="*"/>
-                    <DataGridTextColumn Header="Ping" Binding="{Binding Ping}" Width="70"/>
-                    <DataGridTextColumn Header="Jitter" Binding="{Binding Jitter}" Width="70"/>
-                    <DataGridTextColumn Header="Loss" Binding="{Binding Loss}" Width="70"/>
-                    <DataGridTextColumn Header="DL Mbps" Binding="{Binding Download}" Width="90"/>
-                    <DataGridTextColumn Header="UL Mbps" Binding="{Binding Upload}" Width="90"/>
-                    <DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="150"/>
-                </DataGrid.Columns>
-
-            </DataGrid>
-        </Border>
-
-        <!-- КНОПКИ -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center"
-                    Margin="0,10,0,0" Spacing="20">
-
-            <Button Content="Start Monitoring" Width="160" Height="36"
-                    Command="{Binding StartCommand}"/>
-
-            <Button Content="Stop" Width="120" Height="36"
-                    Command="{Binding StopCommand}"/>
-
-            <Button Content="Export CSV" Width="140" Height="36"
-                    Command="{Binding ExportCsvCommand}"/>
-
-            <Button Content="Show Best Only" Width="160" Height="36"
-                    Command="{Binding ToggleBestOnlyCommand}"/>
+        <!-- BUTTONS -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Content="Start" Width="120" Margin="5" Command="{Binding StartCommand}"/>
+            <Button Content="Stop" Width="120" Margin="5" Command="{Binding StopCommand}"/>
+            <Button Content="Export CSV" Width="120" Margin="5" Command="{Binding ExportCsvCommand}"/>
+            <Button Content="Show Best Only" Width="150" Margin="5" Command="{Binding ToggleBestOnlyCommand}"/>
         </StackPanel>
 
     </Grid>
