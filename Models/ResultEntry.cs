@@ -1,4 +1,4 @@
-namespace VpnSpeedAnalyzer
+namespace VpnSpeedAnalyzer.Models
 {
     public class ResultEntry
     {
@@ -10,5 +10,8 @@ namespace VpnSpeedAnalyzer
         public double Loss { get; set; }
         public double Download { get; set; }
         public double Upload { get; set; }
+
+        // Используется в ResultsManager для сортировки
+        public double Score => Ping + Jitter + Loss;
     }
 }
