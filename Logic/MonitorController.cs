@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace VpnSpeedAnalyzer
@@ -12,19 +11,18 @@ namespace VpnSpeedAnalyzer
         private readonly IpInfoService _ipService = new();
         private readonly SpeedtestService _speedtest = new();
 
-        private Timer _timer;
+        private bool _running = false;
         private string _lastIp = null;
 
         private enum MonitorState
         {
-            Idle,
             NormalCheck,
             Testing,
             Cooldown,
             FastCheck
         }
 
-        private MonitorState _state = MonitorState.Idle;
+        private MonitorState _state = MonitorState.NormalCheck;
 
         public MonitorController(MainViewModel vm, ResultsManager results)
         {
@@ -34,37 +32,51 @@ namespace VpnSpeedAnalyzer
 
         public void Start()
         {
-            if (_state != MonitorState.Idle)
+            if (_running)
                 return;
 
-            _state = MonitorState.NormalCheck;
+            _running = true;
             _vm.StatusText = "Monitoring...";
             _vm.OnPropertyChanged(nameof(_vm.StatusText));
-            StartTimer(15000);
+
+            _ = Loop();
         }
 
         public void Stop()
         {
-            _state = MonitorState.Idle;
+            _running = false;
             _vm.StatusText = "Stopped";
             _vm.OnPropertyChanged(nameof(_vm.StatusText));
-            _timer?.Dispose();
         }
 
-        private void StartTimer(int intervalMs)
+        private async Task Loop()
         {
-            _timer?.Dispose();
-            _timer = new Timer(async _ => await Tick(), null, intervalMs, intervalMs);
-        }
-
-        private async Task Tick()
-        {
-            switch (_state)
+            while (_running)
             {
-                case MonitorState.NormalCheck:
-                case MonitorState.FastCheck:
-                    await CheckIpChange();
-                    break;
+                try
+                {
+                    switch (_state)
+                    {
+                        case MonitorState.NormalCheck:
+                            await CheckIpChange();
+                            await Task.Delay(15000);
+                            break;
+
+                        case MonitorState.FastCheck:
+                            await CheckIpChange();
+                            await Task.Delay(5000);
+                            break;
+
+                        case MonitorState.Cooldown:
+                            await Task.Delay(30000);
+                            _state = MonitorState.FastCheck;
+                            break;
+                    }
+                }
+                catch
+                {
+                    // swallow errors to keep loop alive
+                }
             }
         }
 
@@ -95,8 +107,6 @@ namespace VpnSpeedAnalyzer
             _vm.StatusText = "Host changed → Running Speedtest...";
             _vm.OnPropertyChanged(nameof(_vm.StatusText));
 
-            _timer?.Dispose();
-
             var result = await _speedtest.RunAsync();
             if (result != null)
             {
@@ -107,24 +117,6 @@ namespace VpnSpeedAnalyzer
             _state = MonitorState.Cooldown;
             _vm.StatusText = "Cooldown 30s...";
             _vm.OnPropertyChanged(nameof(_vm.StatusText));
-            await Task.Delay(30000);
-
-            _state = MonitorState.FastCheck;
-            _vm.StatusText = "Fast check...";
-            _vm.OnPropertyChanged(nameof(_vm.StatusText));
-            StartTimer(5000);
-
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(20000);
-                if (_state == MonitorState.FastCheck)
-                {
-                    _state = MonitorState.NormalCheck;
-                    _vm.StatusText = "Monitoring...";
-                    _vm.OnPropertyChanged(nameof(_vm.StatusText));
-                    StartTimer(15000);
-                }
-            });
         }
 
         private void UpdateVmIp(IpInfo info)
