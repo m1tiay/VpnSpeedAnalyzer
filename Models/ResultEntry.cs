@@ -11,7 +11,7 @@ namespace VpnSpeedAnalyzer.Models
         public double Download { get; set; }
         public double Upload { get; set; }
 
-        // Используется в ResultsManager для сортировки
+        // Используется ResultsManager для сортировки
         public double Score => Ping + Jitter + Loss;
     }
 }
