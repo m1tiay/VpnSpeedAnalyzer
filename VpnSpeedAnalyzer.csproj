@@ -11,6 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ScottPlot.WPF" Version="5.0.10" />
+    <PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
   </ItemGroup>
 </Project>
