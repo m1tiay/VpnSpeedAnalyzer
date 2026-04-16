@@ -1,8 +1,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using VpnSpeedAnalyzer.Models;
+using VpnSpeedAnalyzer.Services;
 
-namespace VpnSpeedAnalyzer
+namespace VpnSpeedAnalyzer.Logic
 {
     public class MonitorController
     {
