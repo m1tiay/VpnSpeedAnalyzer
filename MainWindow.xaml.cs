@@ -13,8 +13,8 @@ namespace VpnSpeedAnalyzer
         private readonly List<double> _jitterData = new();
         private readonly List<double> _pingData = new();
 
-        private ScatterPlot _jitterPlot;
-        private ScatterPlot _pingPlot;
+        private ScatterPlot? _jitterPlot;
+        private ScatterPlot? _pingPlot;
 
         public MainWindow()
         {
@@ -30,29 +30,27 @@ namespace VpnSpeedAnalyzer
 
         private void InitPlots()
         {
-            // Jitter plot
-            _jitterPlot = PlotJitter.Plot.AddScatter(
+            _jitterPlot = WpfPlotJitter.Plot.AddScatter(
                 xs: Array.Empty<double>(),
                 ys: Array.Empty<double>(),
                 color: System.Drawing.Color.DeepSkyBlue,
                 lineWidth: 2);
 
-            PlotJitter.Plot.Title("Jitter (ms)");
-            PlotJitter.Plot.XLabel("Test #");
-            PlotJitter.Plot.YLabel("ms");
-            PlotJitter.Refresh();
+            WpfPlotJitter.Plot.Title("Jitter (ms)");
+            WpfPlotJitter.Plot.XLabel("Test #");
+            WpfPlotJitter.Plot.YLabel("ms");
+            WpfPlotJitter.Refresh();
 
-            // Ping plot
-            _pingPlot = PlotPing.Plot.AddScatter(
+            _pingPlot = WpfPlotPing.Plot.AddScatter(
                 xs: Array.Empty<double>(),
                 ys: Array.Empty<double>(),
                 color: System.Drawing.Color.OrangeRed,
                 lineWidth: 2);
 
-            PlotPing.Plot.Title("Ping (ms)");
-            PlotPing.Plot.XLabel("Test #");
-            PlotPing.Plot.YLabel("ms");
-            PlotPing.Refresh();
+            WpfPlotPing.Plot.Title("Ping (ms)");
+            WpfPlotPing.Plot.XLabel("Test #");
+            WpfPlotPing.Plot.YLabel("ms");
+            WpfPlotPing.Refresh();
         }
 
         private void Vm_NewResultArrived(object? sender, SpeedtestResult r)
@@ -66,34 +64,19 @@ namespace VpnSpeedAnalyzer
                                         .Select(i => (double)i)
                                         .ToArray();
 
-                _jitterPlot.Update(xs, _jitterData.ToArray());
-                PlotJitter.Plot.AxisAuto();
-                PlotJitter.Refresh();
+                _jitterPlot?.Update(xs, _jitterData.ToArray());
+                WpfPlotJitter.Plot.AxisAuto();
+                WpfPlotJitter.Refresh();
 
-                _pingPlot.Update(xs, _pingData.ToArray());
-                PlotPing.Plot.AxisAuto();
-                PlotPing.Refresh();
+                _pingPlot?.Update(xs, _pingData.ToArray());
+                WpfPlotPing.Plot.AxisAuto();
+                WpfPlotPing.Refresh();
             });
         }
 
-        private void Start_Click(object sender, RoutedEventArgs e)
-        {
-            _vm.Start();
-        }
-
-        private void Stop_Click(object sender, RoutedEventArgs e)
-        {
-            _vm.Stop();
-        }
-
-        private void ExportCsv_Click(object sender, RoutedEventArgs e)
-        {
-            _vm.ExportCsv();
-        }
-
-        private void ShowBestOnly_Click(object sender, RoutedEventArgs e)
-        {
-            _vm.ToggleBestOnly();
-        }
+        private void Start_Click(object sender, RoutedEventArgs e) => _vm.Start();
+        private void Stop_Click(object sender, RoutedEventArgs e) => _vm.Stop();
+        private void ExportCsv_Click(object sender, RoutedEventArgs e) => _vm.ExportCsv();
+        private void ShowBestOnly_Click(object sender, RoutedEventArgs e) => _vm.ToggleBestOnly();
     }
 }
