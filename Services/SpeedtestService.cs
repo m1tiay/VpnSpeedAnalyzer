@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using VpnSpeedAnalyzer.Models;
 
@@ -8,8 +9,6 @@ namespace VpnSpeedAnalyzer.Services
 {
     public class SpeedtestService
     {
-        private readonly IpInfoService _ip = new();
-
         public async Task<SpeedtestResult?> RunAsync()
         {
             try
@@ -34,12 +33,10 @@ namespace VpnSpeedAnalyzer.Services
                 if (raw == null)
                     return null;
 
-                var ipInfo = await _ip.GetCurrentAsync();
-
                 return new SpeedtestResult
                 {
-                    Ip = ipInfo?.Ip ?? "",
-                    Country = ipInfo?.CountryName ?? "",
+                    Ip = raw.Interface.ExternalIp ?? "",
+                    Country = raw.Server.Country ?? "",
                     Timestamp = DateTime.Now,
                     Ping = raw.Ping.Latency,
                     Jitter = raw.Ping.Jitter,
@@ -48,8 +45,9 @@ namespace VpnSpeedAnalyzer.Services
                     Upload = raw.Upload.Bandwidth / 125000.0
                 };
             }
-            catch
+            catch (Exception ex)
             {
+                System.Windows.MessageBox.Show("Speedtest error: " + ex.Message);
                 return null;
             }
         }
@@ -57,20 +55,49 @@ namespace VpnSpeedAnalyzer.Services
 
     public class SpeedtestRaw
     {
+        [JsonPropertyName("ping")]
         public PingData Ping { get; set; } = new();
+
+        [JsonPropertyName("download")]
         public BandwidthData Download { get; set; } = new();
+
+        [JsonPropertyName("upload")]
         public BandwidthData Upload { get; set; } = new();
+
+        [JsonPropertyName("packetLoss")]
         public double PacketLoss { get; set; }
+
+        [JsonPropertyName("interface")]
+        public InterfaceData Interface { get; set; } = new();
+
+        [JsonPropertyName("server")]
+        public ServerData Server { get; set; } = new();
 
         public class PingData
         {
+            [JsonPropertyName("latency")]
             public double Latency { get; set; }
+
+            [JsonPropertyName("jitter")]
             public double Jitter { get; set; }
         }
 
         public class BandwidthData
         {
+            [JsonPropertyName("bandwidth")]
             public double Bandwidth { get; set; }
+        }
+
+        public class InterfaceData
+        {
+            [JsonPropertyName("externalIp")]
+            public string? ExternalIp { get; set; }
+        }
+
+        public class ServerData
+        {
+            [JsonPropertyName("country")]
+            public string? Country { get; set; }
         }
     }
 }
