@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using VpnSpeedAnalyzer.Models;
+using VpnSpeedAnalyzer.Logic;
 
 namespace VpnSpeedAnalyzer.Services
 {
