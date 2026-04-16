@@ -1,0 +1,31 @@
+name: Build VpnSpeedAnalyzer
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj
+
+      - name: Publish
+        run: dotnet publish VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj -c Release -o out
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VpnSpeedAnalyzer
+          path: out
