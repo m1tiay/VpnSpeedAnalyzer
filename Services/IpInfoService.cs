@@ -14,8 +14,7 @@ namespace VpnSpeedAnalyzer.Services
             try
             {
                 var json = await _http.GetStringAsync("https://ipapi.co/json/");
-                var info = JsonSerializer.Deserialize<IpInfo>(json);
-                return info;
+                return JsonSerializer.Deserialize<IpInfo>(json);
             }
             catch
             {
