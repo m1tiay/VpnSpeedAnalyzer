@@ -1,3 +1,5 @@
+using System;
+
 namespace VpnSpeedAnalyzer.Models
 {
     public class SpeedtestResult
