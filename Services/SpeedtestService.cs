@@ -47,7 +47,7 @@ namespace VpnSpeedAnalyzer.Services
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show("Speedtest error: " + ex.Message);
+                Logger.Write("Speedtest ERROR: " + ex.Message);
                 return null;
             }
         }
