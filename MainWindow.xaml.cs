@@ -30,27 +30,27 @@ namespace VpnSpeedAnalyzer
 
         private void InitPlots()
         {
-            _jitterPlot = WpfPlotJitter.Plot.AddScatter(
+            _jitterPlot = JitterPlot.Plot.AddScatter(
                 xs: Array.Empty<double>(),
                 ys: Array.Empty<double>(),
                 color: System.Drawing.Color.DeepSkyBlue,
                 lineWidth: 2);
 
-            WpfPlotJitter.Plot.Title("Jitter (ms)");
-            WpfPlotJitter.Plot.XLabel("Test #");
-            WpfPlotJitter.Plot.YLabel("ms");
-            WpfPlotJitter.Refresh();
+            JitterPlot.Plot.Title("Jitter (ms)");
+            JitterPlot.Plot.XLabel("Test #");
+            JitterPlot.Plot.YLabel("ms");
+            JitterPlot.Refresh();
 
-            _pingPlot = WpfPlotPing.Plot.AddScatter(
+            _pingPlot = PingPlot.Plot.AddScatter(
                 xs: Array.Empty<double>(),
                 ys: Array.Empty<double>(),
                 color: System.Drawing.Color.OrangeRed,
                 lineWidth: 2);
 
-            WpfPlotPing.Plot.Title("Ping (ms)");
-            WpfPlotPing.Plot.XLabel("Test #");
-            WpfPlotPing.Plot.YLabel("ms");
-            WpfPlotPing.Refresh();
+            PingPlot.Plot.Title("Ping (ms)");
+            PingPlot.Plot.XLabel("Test #");
+            PingPlot.Plot.YLabel("ms");
+            PingPlot.Refresh();
         }
 
         private void Vm_NewResultArrived(object? sender, SpeedtestResult r)
@@ -65,12 +65,12 @@ namespace VpnSpeedAnalyzer
                                         .ToArray();
 
                 _jitterPlot?.Update(xs, _jitterData.ToArray());
-                WpfPlotJitter.Plot.AxisAuto();
-                WpfPlotJitter.Refresh();
+                JitterPlot.Plot.AxisAuto();
+                JitterPlot.Refresh();
 
                 _pingPlot?.Update(xs, _pingData.ToArray());
-                WpfPlotPing.Plot.AxisAuto();
-                WpfPlotPing.Refresh();
+                PingPlot.Plot.AxisAuto();
+                PingPlot.Refresh();
             });
         }
 
