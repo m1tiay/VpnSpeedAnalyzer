@@ -17,17 +17,15 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-          include-prerelease: true
 
-      - name: Install .NET Desktop Runtime
-        run: |
-          dotnet workload install windowsdesktop
+      - name: Install Windows Desktop SDK
+        run: dotnet workload install windowsdesktop
 
       - name: Restore
         run: dotnet restore VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj
 
       - name: Publish
-        run: dotnet publish VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj -c Release -o out
+        run: dotnet publish VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj -c Release -o out --self-contained true --runtime win-x64
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
