@@ -1,4 +1,3 @@
-using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
@@ -32,50 +31,48 @@ namespace VpnSpeedAnalyzer
         private void InitPlots()
         {
             // Jitter plot
-            _jitterPlot = WpfPlotJitter.Plot.AddScatter(
+            _jitterPlot = PlotJitter.Plot.AddScatter(
                 xs: Array.Empty<double>(),
                 ys: Array.Empty<double>(),
                 color: System.Drawing.Color.DeepSkyBlue,
                 lineWidth: 2);
 
-            WpfPlotJitter.Plot.Title("Jitter (ms)");
-            WpfPlotJitter.Plot.XLabel("Test #");
-            WpfPlotJitter.Plot.YLabel("ms");
-            WpfPlotJitter.Refresh();
+            PlotJitter.Plot.Title("Jitter (ms)");
+            PlotJitter.Plot.XLabel("Test #");
+            PlotJitter.Plot.YLabel("ms");
+            PlotJitter.Refresh();
 
             // Ping plot
-            _pingPlot = WpfPlotPing.Plot.AddScatter(
+            _pingPlot = PlotPing.Plot.AddScatter(
                 xs: Array.Empty<double>(),
                 ys: Array.Empty<double>(),
                 color: System.Drawing.Color.OrangeRed,
                 lineWidth: 2);
 
-            WpfPlotPing.Plot.Title("Ping (ms)");
-            WpfPlotPing.Plot.XLabel("Test #");
-            WpfPlotPing.Plot.YLabel("ms");
-            WpfPlotPing.Refresh();
+            PlotPing.Plot.Title("Ping (ms)");
+            PlotPing.Plot.XLabel("Test #");
+            PlotPing.Plot.YLabel("ms");
+            PlotPing.Refresh();
         }
 
-        private void Vm_NewResultArrived(object sender, SpeedtestResult r)
+        private void Vm_NewResultArrived(object? sender, SpeedtestResult r)
         {
             Dispatcher.Invoke(() =>
             {
-                // Add new data
                 _jitterData.Add(r.Jitter);
                 _pingData.Add(r.Ping);
 
-                // X axis = test index
-                double[] xs = Enumerable.Range(0, _jitterData.Count).Select(i => (double)i).ToArray();
+                double[] xs = Enumerable.Range(0, _jitterData.Count)
+                                        .Select(i => (double)i)
+                                        .ToArray();
 
-                // Update jitter plot
                 _jitterPlot.Update(xs, _jitterData.ToArray());
-                WpfPlotJitter.Plot.AxisAuto();
-                WpfPlotJitter.Refresh();
+                PlotJitter.Plot.AxisAuto();
+                PlotJitter.Refresh();
 
-                // Update ping plot
                 _pingPlot.Update(xs, _pingData.ToArray());
-                WpfPlotPing.Plot.AxisAuto();
-                WpfPlotPing.Refresh();
+                PlotPing.Plot.AxisAuto();
+                PlotPing.Refresh();
             });
         }
 
