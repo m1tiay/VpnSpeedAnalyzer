@@ -9,13 +9,11 @@ namespace VpnSpeedAnalyzer
     {
         private readonly MainViewModel _vm;
 
-        // данные для графиков
         private readonly List<double> _jitterData = new();
         private readonly List<double> _pingData = new();
 
-        // линии графиков
-        private ScottPlot.Plottable.SignalPlot _jitterLine;
-        private ScottPlot.Plottable.SignalPlot _pingLine;
+        private SignalPlot _jitterLine;
+        private SignalPlot _pingLine;
 
         public MainWindow()
         {
@@ -26,13 +24,11 @@ namespace VpnSpeedAnalyzer
 
             InitPlots();
 
-            // подписка на новые результаты
             _vm.NewResultArrived += Vm_NewResultArrived;
         }
 
         private void InitPlots()
         {
-            // JITTER
             _jitterLine = JitterPlot.Plot.AddSignal(_jitterData.ToArray());
             JitterPlot.Plot.Title("Jitter (ms)");
             JitterPlot.Plot.YLabel("ms");
@@ -40,7 +36,6 @@ namespace VpnSpeedAnalyzer
             JitterPlot.Plot.SetAxisLimits(yMin: 0);
             JitterPlot.Refresh();
 
-            // PING
             _pingLine = PingPlot.Plot.AddSignal(_pingData.ToArray());
             PingPlot.Plot.Title("Ping (ms)");
             PingPlot.Plot.YLabel("ms");
