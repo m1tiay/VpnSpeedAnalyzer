@@ -37,13 +37,19 @@ namespace VpnSpeedAnalyzer.Logic
         {
             while (!token.IsCancellationRequested)
             {
+                Logger.Write("Checking IP...");
                 var info = await _ipService.GetCurrentAsync();
+                Logger.Write("IP result: " + (info?.Ip ?? "NULL"));
+
 
                 if (info != null)
                 {
                     if (_lastIp == null || info.Ip != _lastIp.Ip)
                     {
+                        Logger.Write("Running speedtest...");
                         var result = await _speedtest.RunAsync();
+                        Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
+
                         if (result != null)
                             NewResult?.Invoke(this, result);
                     }
