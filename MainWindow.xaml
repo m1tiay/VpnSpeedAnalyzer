@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:VpnSpeedAnalyzer"
+        xmlns:sp="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         Title="VPN Speed Analyzer"
         Width="1100" Height="700"
@@ -23,9 +23,7 @@
             <TextBlock Text="IP:" FontWeight="Bold" Margin="0 0 10 0"/>
             <TextBlock Text="{Binding CurrentIp}" Margin="0 0 20 0"/>
 
-            <TextBlock Text="{Binding CurrentFlag}" FontSize="16" Margin="0 0 10 0"/>
             <TextBlock Text="{Binding CurrentCountry}" Margin="0 0 20 0"/>
-
             <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 10 0"/>
             <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 20 0"/>
 
@@ -34,12 +32,12 @@
 
         <!-- JITTER PLOT -->
         <GroupBox Header="Jitter" Grid.Row="1" Margin="0 0 0 10">
-            <local:WpfPlot x:Name="JitterPlot"/>
+            <sp:WpfPlot x:Name="JitterPlot"/>
         </GroupBox>
 
         <!-- PING PLOT -->
         <GroupBox Header="Ping" Grid.Row="2" Margin="0 0 0 10">
-            <local:WpfPlot x:Name="PingPlot"/>
+            <sp:WpfPlot x:Name="PingPlot"/>
         </GroupBox>
 
         <!-- RESULTS TABLE -->
