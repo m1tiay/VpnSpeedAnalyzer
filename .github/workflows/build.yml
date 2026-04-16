@@ -18,14 +18,20 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Verify .NET installation
+        run: dotnet --info
+
       - name: Install Windows Desktop SDK
         run: dotnet workload install windowsdesktop
 
-      - name: Restore
+      - name: Restore dependencies
         run: dotnet restore VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj
 
-      - name: Publish
-        run: dotnet publish VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj -c Release -o out --self-contained true --runtime win-x64
+      - name: Build project
+        run: dotnet build VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj -c Release
+
+      - name: Publish self-contained EXE
+        run: dotnet publish VpnSpeedAnalyzer/VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained true -o out
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
