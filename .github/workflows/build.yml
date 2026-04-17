@@ -1,35 +1,60 @@
-name: Build VpnSpeedAnalyzer
+name: 🔨 Сборка VpnSpeedAnalyzer
 
+# Запускать при: push в main, pull request, ручном запуске, и при создании релиза
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
+  release:
+    types: [created, published]
 
 jobs:
   build:
     runs-on: windows-latest
+    name: Сборка Release EXE
 
     steps:
-      - name: Checkout
+      # Скачиваем код
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      # Устанавливаем .NET
+      - name: 🔧 Установка .NET 8.0
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Verify .NET installation
+      # Проверяем .NET
+      - name: ℹ️  Проверка .NET
         run: dotnet --info
 
-      - name: Restore dependencies
+      # Восстанавливаем зависимости
+      - name: 📚 Восстановление зависимостей
         run: dotnet restore VpnSpeedAnalyzer.csproj
 
-      - name: Build project
-        run: dotnet build VpnSpeedAnalyzer.csproj -c Release
+      # Собираем Debug для проверки
+      - name: 🔨 Сборка Debug версии
+        run: dotnet build VpnSpeedAnalyzer.csproj -c Debug --no-restore
 
-      - name: Publish self-contained EXE
+      # Собираем Release EXE (один файл)
+      - name: 📦 Публикация Release EXE (standalone)
         run: dotnet publish VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained true -o out
 
-      - name: Upload artifact
+      # Загружаем артефакт в GitHub Actions
+      - name: 📤 Загрузка артефакта
         uses: actions/upload-artifact@v4
         with:
-          name: VpnSpeedAnalyzer
-          path: out
+          name: VpnSpeedAnalyzer-Release
+          path: out/VpnSpeedAnalyzer.exe
+          retention-days: 30
+
+      # При релизе - добавляем exe в релиз GitHub
+      - name: 🚀 Добавление EXE в релиз
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: out/VpnSpeedAnalyzer.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
