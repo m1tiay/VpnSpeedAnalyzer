@@ -18,6 +18,11 @@ namespace VpnSpeedAnalyzer.Services
         private const double BitsPerMbpsConversionFactor = 125000.0;
         private const int ProcessTimeoutMs = 300000; // 5 минут
 
+        public SpeedtestService()
+        {
+            Logger.Write("SpeedtestService конструктор вызван");
+        }
+
         public async Task<SpeedtestResult?> RunAsync()
         {
             try

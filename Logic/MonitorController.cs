@@ -24,8 +24,11 @@ namespace VpnSpeedAnalyzer.Logic
 
         public MonitorController(IIpInfoService ipService, ISpeedtestService speedtest)
         {
+            Logger.Write("MonitorController конструктор: проверка параметров");
             _ipService = ipService ?? throw new ArgumentNullException(nameof(ipService));
+            Logger.Write("MonitorController: ipService ОК");
             _speedtest = speedtest ?? throw new ArgumentNullException(nameof(speedtest));
+            Logger.Write("MonitorController: speedtest ОК");
         }
 
         /// <summary>

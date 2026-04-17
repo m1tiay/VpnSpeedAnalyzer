@@ -16,7 +16,9 @@ namespace VpnSpeedAnalyzer.Logic
 
         public ResultsManager(ObservableCollection<ResultEntry> results)
         {
+            Logger.Write("ResultsManager конструктор вызван");
             _results = results ?? throw new ArgumentNullException(nameof(results));
+            Logger.Write("ResultsManager: инициализирован");
         }
 
         /// <summary>

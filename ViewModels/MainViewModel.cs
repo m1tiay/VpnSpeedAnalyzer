@@ -97,24 +97,46 @@ namespace VpnSpeedAnalyzer
 
         public MainViewModel()
         {
-            // Создаём сервисы
-            var ipService = new IpInfoService();
-            var speedtestService = new SpeedtestService();
+            try
+            {
+                Logger.Write("ViewModel: IpInfoService создание");
+                // Создаём сервисы
+                var ipService = new IpInfoService();
+                Logger.Write("ViewModel: IpInfoService ОК");
 
-            // Создаём контроллер монитора с иньекцией
-            _monitor = new MonitorController(ipService, speedtestService);
-            _monitor.NewResult += Monitor_NewResult;
+                Logger.Write("ViewModel: SpeedtestService создание");
+                var speedtestService = new SpeedtestService();
+                Logger.Write("ViewModel: SpeedtestService ОК");
 
-            // Создаём менеджер результатов
-            _resultsManager = new ResultsManager(Results);
+                Logger.Write("ViewModel: MonitorController создание");
+                // Создаём контроллер монитора с иньекцией
+                _monitor = new MonitorController(ipService, speedtestService);
+                Logger.Write("ViewModel: MonitorController ОК");
+                
+                Logger.Write("ViewModel: Monitor.NewResult подписка");
+                _monitor.NewResult += Monitor_NewResult;
+                Logger.Write("ViewModel: Monitor.NewResult подписана");
 
-            // Создаём команды
-            StartCommand = new RelayCommand(_ => Start());
-            StopCommand = new RelayCommand(_ => Stop());
-            ExportCsvCommand = new RelayCommand(_ => ExportCsv());
-            ToggleBestOnlyCommand = new RelayCommand(_ => ToggleBestOnly());
+                Logger.Write("ViewModel: ResultsManager создание");
+                // Создаём менеджер результатов
+                _resultsManager = new ResultsManager(Results);
+                Logger.Write("ViewModel: ResultsManager ОК");
 
-            Logger.Write("Основная Виев-Модель инициализирована");
+                Logger.Write("ViewModel: Команды создание");
+                // Создаём команды
+                StartCommand = new RelayCommand(_ => Start());
+                StopCommand = new RelayCommand(_ => Stop());
+                ExportCsvCommand = new RelayCommand(_ => ExportCsv());
+                ToggleBestOnlyCommand = new RelayCommand(_ => ToggleBestOnly());
+                Logger.Write("ViewModel: Команды ОК");
+
+                Logger.Write("Основная Виев-Модель инициализирована");
+            }
+            catch (Exception ex)
+            {
+                Logger.Write("ОШИБКА ViewModel: " + ex.GetType().Name + " | " + ex.Message + " | Stack: " + ex.StackTrace);
+                throw;
+            }
         }
 
         private void Monitor_NewResult(object? sender, SpeedtestResult r)

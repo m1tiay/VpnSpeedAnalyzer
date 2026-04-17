@@ -21,6 +21,11 @@ namespace VpnSpeedAnalyzer.Services
             Timeout = TimeSpan.FromSeconds(HttpTimeoutSeconds)
         };
 
+        public IpInfoService()
+        {
+            Logger.Write("IpInfoService конструктор вызван");
+        }
+
         public async Task<IpInfo?> GetCurrentAsync()
         {
             try

@@ -1,6 +1,7 @@
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using VpnSpeedAnalyzer.Logic;
@@ -13,6 +14,18 @@ namespace VpnSpeedAnalyzer
     /// </summary>
     public partial class MainWindow : Window
     {
+        // Самый примитивный логгер
+        private static void CriticalLog(string message)
+        {
+            try
+            {
+                var logPath = Path.Combine(AppContext.BaseDirectory, "log.txt");
+                var msg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}  [MainWindow] {message}\n";
+                File.AppendAllText(logPath, msg);
+            }
+            catch { }
+        }
+
         private readonly MainViewModel _vm;
 
         private readonly List<double> _jitterData = new();
@@ -23,27 +36,42 @@ namespace VpnSpeedAnalyzer
 
         public MainWindow()
         {
+            CriticalLog(">>> MainWindow конструктор НАЧАЛ");
             try
             {
+                CriticalLog("InitializeComponent попытка");
                 Logger.Write("Инициализация окна START");
 
                 InitializeComponent();
+                CriticalLog("InitializeComponent ОК");
                 Logger.Write("InitializeComponent ОК");
 
+                CriticalLog("MainViewModel создание попытка");
                 _vm = new MainViewModel();
+                CriticalLog("MainViewModel создание ОК");
                 Logger.Write("ViewModel ОК");
 
+                CriticalLog("DataContext установка");
                 DataContext = _vm;
+                CriticalLog("DataContext установлен");
                 Logger.Write("DataContext установлен");
 
+                CriticalLog("Событие NewResultArrived подписка");
                 _vm.NewResultArrived += Vm_NewResultArrived;
+                CriticalLog("Событие подписано");
                 Logger.Write("Событие подписано");
 
+                CriticalLog("InitPlots попытка");
                 InitPlots();
+                CriticalLog("InitPlots ОК");
                 Logger.Write("InitPlots ОК");
+                
+                CriticalLog(">>> MainWindow конструктор ЗАВЕРШИЛСЯ УСПЕШНО");
             }
             catch (Exception ex)
             {
+                string errMsg = "MainWindow ОШИБКА: " + ex.GetType().Name + " | " + ex.Message + " | " + ex.StackTrace;
+                CriticalLog(errMsg);
                 Logger.Write("Ошибка окна: " + ex.ToString());
                 throw;
             }
