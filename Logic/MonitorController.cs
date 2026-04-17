@@ -88,7 +88,6 @@ namespace VpnSpeedAnalyzer.Logic
                             if (_lastIp == null || info.Ip != _lastIp.Ip)
                             {
                                 Logger.Write("Ип-адрес изменился, запускаем тест скорости...");
-                        }
                                 var result = await _speedtest.RunAsync()
                                     .ConfigureAwait(false);
                                 Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
@@ -98,7 +97,7 @@ namespace VpnSpeedAnalyzer.Logic
                             }
                             else
                             {
-                                Logger.Write("IP unchanged, skipping speedtest");
+                                Logger.Write("Ип-адрес не изменился, пропускаем тест скорости");
                             }
 
                             _lastIp = info;
