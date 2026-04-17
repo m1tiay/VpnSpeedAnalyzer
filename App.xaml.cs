@@ -8,16 +8,29 @@ namespace VpnSpeedAnalyzer
     {
         public App()
         {
-            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            try
             {
-                Logger.Write("FATAL ERROR: " + e.ExceptionObject.ToString());
-            };
+                Logger.Write("=== ПРИЛОЖЕНИЕ ЗАПУСКАЕТСЯ ===");
+                
+                AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+                {
+                    Logger.Write("КРИТИЧЕСКАЯ ОШИБКА: " + e.ExceptionObject.ToString());
+                };
 
-            DispatcherUnhandledException += (s, e) =>
+                DispatcherUnhandledException += (s, e) =>
+                {
+                    Logger.Write("ОШИБКА UI: " + e.Exception.Message + "\n" + e.Exception.StackTrace);
+                    e.Handled = true;
+                };
+                
+                Logger.Write("Обработчики исключений установлены");
+            }
+            catch (Exception ex)
             {
-                Logger.Write("UI ERROR: " + e.Exception.Message);
-                e.Handled = true;
-            };
+                // Пишем в debug если Logger не работает
+                System.Diagnostics.Debug.WriteLine("Ошибка при инициализации App: " + ex.Message);
+                throw;
+            }
         }
     }
 }
