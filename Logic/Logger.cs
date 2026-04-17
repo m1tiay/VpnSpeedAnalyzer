@@ -16,6 +16,19 @@ namespace VpnSpeedAnalyzer.Logic
         {
             try
             {
+                // Ограничение размера лога - 10MB максимум
+                const long MaxLogSizeBytes = 10 * 1024 * 1024; // 10MB
+                
+                if (File.Exists(LogPath))
+                {
+                    var fileInfo = new FileInfo(LogPath);
+                    if (fileInfo.Length > MaxLogSizeBytes)
+                    {
+                        // Лог переполнился - стираем и начинаем заново
+                        File.Delete(LogPath);
+                    }
+                }
+                
                 var logMessage = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}  {message}\n";
                 File.AppendAllText(LogPath, logMessage);
             }
