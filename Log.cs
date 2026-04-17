@@ -1,41 +1,15 @@
-using System;
-using System.IO;
+using VpnSpeedAnalyzer.Logic;
 
 namespace VpnSpeedAnalyzer
 {
+    /// <summary>
+    /// Deprecated: Use Logger class from VpnSpeedAnalyzer.Logic instead
+    /// This class is kept for backward compatibility only
+    /// </summary>
+    [System.Obsolete("Use Logger from VpnSpeedAnalyzer.Logic namespace instead", false)]
     public static class Log
     {
-        private static readonly string LogDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-        private static readonly string LogFile = Path.Combine(LogDir, "app.log");
-
-        static Log()
-        {
-            try
-            {
-                if (!Directory.Exists(LogDir))
-                    Directory.CreateDirectory(LogDir);
-            }
-            catch
-            {
-                // игнорируем ошибки логирования, чтобы не ломать приложение
-            }
-        }
-
-        public static void Info(string msg) => Write("INFO", msg);
-
-        public static void Error(string msg) => Write("ERROR", msg);
-
-        private static void Write(string level, string msg)
-        {
-            try
-            {
-                File.AppendAllText(LogFile,
-                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{level}] {msg}{Environment.NewLine}");
-            }
-            catch
-            {
-                // никогда не роняем приложение из-за логов
-            }
-        }
+        public static void Info(string msg) => Logger.Write($"INFO: {msg}");
+        public static void Error(string msg) => Logger.Write($"ERROR: {msg}");
     }
 }

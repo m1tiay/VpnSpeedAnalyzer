@@ -6,58 +6,131 @@ using VpnSpeedAnalyzer.Services;
 
 namespace VpnSpeedAnalyzer.Logic
 {
-    public class MonitorController
+    /// <summary>
+    /// Контроллер, который мониторит изменения IP адреса и запускает тесты скорости
+    /// </summary>
+    public class MonitorController : IDisposable
     {
-        private readonly MainViewModel _vm;
-        private readonly IpInfoService _ipService = new();
-        private readonly SpeedtestService _speedtest = new();
+        // Пауза между проверками IP адреса (15 секунд)
+        private const int CheckIntervalMs = 15000;
+
+        private readonly IIpInfoService _ipService;
+        private readonly ISpeedtestService _speedtest;
 
         private CancellationTokenSource? _cts;
         private IpInfo? _lastIp;
 
         public event EventHandler<SpeedtestResult>? NewResult;
 
-        public MonitorController(MainViewModel vm)
+        public MonitorController(IIpInfoService ipService, ISpeedtestService speedtest)
         {
-            _vm = vm;
+            _ipService = ipService ?? throw new ArgumentNullException(nameof(ipService));
+            _speedtest = speedtest ?? throw new ArgumentNullException(nameof(speedtest));
         }
 
+        /// <summary>
+        /// Начинает мониторинг
+        /// </summary>
         public void Start()
         {
+            if (_cts != null)
+            {
+                Logger.Write("Монитор уже работает");
+                return;
+            }
+
             _cts = new CancellationTokenSource();
-            Task.Run(() => Loop(_cts.Token));
+            _ = LoopAsync(_cts.Token);
         }
 
+        /// <summary>
+        /// Останавливает мониторинг
+        /// </summary>
         public void Stop()
         {
-            _cts?.Cancel();
+            if (_cts == null)
+            {
+                Logger.Write("Монитор не работает");
+                return;
+            }
+
+            _cts.Cancel();
         }
 
-        private async Task Loop(CancellationToken token)
+        /// <summary>
+        /// Очищает ресурсы
+        /// </summary>
+        public void Dispose()
         {
-            while (!token.IsCancellationRequested)
+            Stop();
+            _cts?.Dispose();
+            _cts = null;
+        }
+
+        /// <summary>
+        /// Основной цикл мониторинга
+        /// </summary>
+        private async Task LoopAsync(CancellationToken token)
+        {
+            try
             {
-                Logger.Write("Checking IP...");
-                var info = await _ipService.GetCurrentAsync();
-                Logger.Write("IP result: " + (info?.Ip ?? "NULL"));
-
-
-                if (info != null)
+                while (!token.IsCancellationRequested)
                 {
-                    if (_lastIp == null || info.Ip != _lastIp.Ip)
+                    try
                     {
-                        Logger.Write("Running speedtest...");
-                        var result = await _speedtest.RunAsync();
-                        Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
+                        Logger.Write("Проверяем IP адрес...");
+                        var info = await _ipService.GetCurrentAsync()
+                            .ConfigureAwait(false);
+                        Logger.Write("Ответ IP API: " + (info?.Ip ?? "NULL"));
 
-                        if (result != null)
-                            NewResult?.Invoke(this, result);
+                        if (info != null)
+                        {
+                            if (_lastIp == null || info.Ip != _lastIp.Ip)
+                            {
+                                Logger.Write("Ип-адрес изменился, запускаем тест скорости...");
+                        }
+                                var result = await _speedtest.RunAsync()
+                                    .ConfigureAwait(false);
+                                Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
+
+                                if (result != null)
+                                    NewResult?.Invoke(this, result);
+                            }
+                            else
+                            {
+                                Logger.Write("IP unchanged, skipping speedtest");
+                            }
+
+                            _lastIp = info;
+                        }
+
+                        await Task.Delay(CheckIntervalMs, token)
+                            .ConfigureAwait(false);
                     }
-
-                    _lastIp = info;
+                    catch (OperationCanceledException)
+                    {
+                        Logger.Write("Monitor loop cancelled");
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Write($"Monitor loop error: {ex.GetType().Name}: {ex.Message}");
+                        // Continue looping even on error
+                        try
+                        {
+                            await Task.Delay(CheckIntervalMs, token)
+                                .ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
+                    }
                 }
-
-                await Task.Delay(15000, token);
+            }
+            finally
+            {
+                Logger.Write("Monitor loop ended");
             }
         }
     }

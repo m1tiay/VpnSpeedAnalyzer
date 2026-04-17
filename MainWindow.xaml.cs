@@ -8,6 +8,9 @@ using VpnSpeedAnalyzer.Models;
 
 namespace VpnSpeedAnalyzer
 {
+    /// <summary>
+    /// Основное окно приложения
+    /// </summary>
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _vm;
@@ -22,26 +25,26 @@ namespace VpnSpeedAnalyzer
         {
             try
             {
-                Logger.Write("MainWindow ctor START");
+                Logger.Write("Инициализация окна START");
 
                 InitializeComponent();
-                Logger.Write("InitializeComponent OK");
+                Logger.Write("InitializeComponent ОК");
 
                 _vm = new MainViewModel();
-                Logger.Write("MainViewModel OK");
+                Logger.Write("ViewModel ОК");
 
                 DataContext = _vm;
-                Logger.Write("DataContext set");
+                Logger.Write("DataContext установлен");
 
                 _vm.NewResultArrived += Vm_NewResultArrived;
-                Logger.Write("Event subscribed");
+                Logger.Write("Событие подписано");
 
                 InitPlots();
-                Logger.Write("InitPlots OK");
+                Logger.Write("InitPlots ОК");
             }
             catch (Exception ex)
             {
-                Logger.Write("MainWindow ERROR: " + ex.ToString());
+                Logger.Write("Ошибка окна: " + ex.ToString());
                 throw;
             }
         }
@@ -50,7 +53,7 @@ namespace VpnSpeedAnalyzer
         {
             try
             {
-                // Создаём пустые графики БЕЗ Refresh()
+                // Создаём пустые графики
                 _jitterPlot = JitterPlot.Plot.AddScatter(
                     xs: new double[] { 0 },
                     ys: new double[] { 0 },
@@ -63,18 +66,17 @@ namespace VpnSpeedAnalyzer
                     color: System.Drawing.Color.OrangeRed,
                     lineWidth: 2);
 
-                // Убираем авто-масштабирование до появления реальных данных
-                JitterPlot.Plot.Title("Jitter (ms)");
-                JitterPlot.Plot.XLabel("Test #");
-                JitterPlot.Plot.YLabel("ms");
+                JitterPlot.Plot.Title("Дрожание (мс)");
+                JitterPlot.Plot.XLabel("Номер теста");
+                JitterPlot.Plot.YLabel("мс");
 
-                PingPlot.Plot.Title("Ping (ms)");
-                PingPlot.Plot.XLabel("Test #");
-                PingPlot.Plot.YLabel("ms");
+                PingPlot.Plot.Title("Пинг (мс)");
+                PingPlot.Plot.XLabel("Номер теста");
+                PingPlot.Plot.YLabel("мс");
             }
             catch (Exception ex)
             {
-                Logger.Write("InitPlots ERROR: " + ex.ToString());
+                Logger.Write("Ошибка инициализации графиков: " + ex.ToString());
                 throw;
             }
         }
@@ -92,6 +94,7 @@ namespace VpnSpeedAnalyzer
                                             .Select(i => (double)i)
                                             .ToArray();
 
+                    // Обновляем графики
                     _jitterPlot?.Update(xs, _jitterData.ToArray());
                     JitterPlot.Plot.AxisAuto();
                     JitterPlot.Refresh();
@@ -103,33 +106,8 @@ namespace VpnSpeedAnalyzer
             }
             catch (Exception ex)
             {
-                Logger.Write("Vm_NewResultArrived ERROR: " + ex.ToString());
-                throw;
+                Logger.Write("Ошибка при получении результата: " + ex.ToString());
             }
-        }
-
-        private void Start_Click(object sender, RoutedEventArgs e)
-        {
-            Logger.Write("Start_Click");
-            _vm.Start();
-        }
-
-        private void Stop_Click(object sender, RoutedEventArgs e)
-        {
-            Logger.Write("Stop_Click");
-            _vm.Stop();
-        }
-
-        private void ExportCsv_Click(object sender, RoutedEventArgs e)
-        {
-            Logger.Write("ExportCsv_Click");
-            _vm.ExportCsv();
-        }
-
-        private void ShowBestOnly_Click(object sender, RoutedEventArgs e)
-        {
-            Logger.Write("ShowBestOnly_Click");
-            _vm.ToggleBestOnly();
         }
     }
 }

@@ -3,6 +3,9 @@ using System.Windows.Input;
 
 namespace VpnSpeedAnalyzer
 {
+    /// <summary>
+    /// Ореализация ICommand для MVVM команд
+    /// </summary>
     public class RelayCommand : ICommand
     {
         private readonly Action<object?> _execute;
@@ -10,9 +13,11 @@ namespace VpnSpeedAnalyzer
 
         public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
         {
-            _execute = execute;
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
             _canExecute = canExecute;
         }
+
+        public event EventHandler? CanExecuteChanged;
 
         public bool CanExecute(object? parameter) =>
             _canExecute?.Invoke(parameter) ?? true;
@@ -20,6 +25,10 @@ namespace VpnSpeedAnalyzer
         public void Execute(object? parameter) =>
             _execute(parameter);
 
-        public event EventHandler? CanExecuteChanged;
+        /// <summary>
+        /// Триггерит событие CanExecuteChanged чтобы нотифицировать UI о изменении доступности команды
+        /// </summary>
+        public void RaiseCanExecuteChanged() =>
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
     }
 }
