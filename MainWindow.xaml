@@ -103,6 +103,7 @@
             <Setter Property="MinHeight" Value="28"/>
             <Setter Property="Margin" Value="4,0,0,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <Style TargetType="ComboBoxItem">
@@ -144,12 +145,25 @@
                                 <Setter TargetName="TabBorder" Property="Background" Value="#2A2F4A"/>
                                 <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
                                 <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                <Setter Property="Panel.ZIndex" Value="10"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="TabBorder" Property="Background" Value="#30365B"/>
                                 <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="GridSplitter">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GridSplitter">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="3"/>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -170,16 +184,34 @@
 
                     <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0 0 0 10">
                         <DockPanel LastChildFill="True">
-                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                                <TextBlock Text="IP:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
-                                <TextBlock Text="{Binding CurrentIp}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
-                                <TextBlock Text="Страна:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
-                                <TextBlock Text="{Binding CurrentCountry}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
-                                <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
-                                <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
-                                <TextBlock Text="Профиль:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
-                                <ComboBox Width="120" Height="28" Margin="0" VerticalAlignment="Center" ItemsSource="{Binding ScoringProfiles}" SelectedItem="{Binding SelectedScoringProfile}"/>
-                            </StackPanel>
+                            <Grid DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="IP:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding CurrentIp}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="Страна:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="{Binding CurrentCountry}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="ASN:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="5" Text="{Binding CurrentAsn}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="6" Text="Профиль:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Column="7"
+                                          Width="120"
+                                          Height="28"
+                                          Margin="0"
+                                          VerticalAlignment="Center"
+                                          Foreground="{StaticResource TextBrush}"
+                                          Background="{StaticResource PanelSecondaryBrush}"
+                                          ItemsSource="{Binding ScoringProfiles}"
+                                          SelectedItem="{Binding SelectedScoringProfile}"/>
+                            </Grid>
 
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
                                 <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
@@ -234,7 +266,7 @@
                                   ResizeDirection="Rows"
                                   ShowsPreview="True"/>
 
-                    <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0 0 0 10">
+                    <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0,8,0,10">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
@@ -327,6 +359,8 @@
                                 <ComboBox Width="118" Height="28"
                                           ItemsSource="{Binding ScoringProfiles}"
                                           SelectedItem="{Binding SelectedScoringProfile}"
+                                          Foreground="{StaticResource TextBrush}"
+                                          Background="{StaticResource PanelSecondaryBrush}"
                                           Margin="0,0,12,0"/>
                                 <Button Content="Экспорт топа CSV" Width="150" Command="{Binding ExportTopHostsCsvCommand}"/>
                             </StackPanel>

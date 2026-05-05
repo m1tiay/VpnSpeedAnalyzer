@@ -140,6 +140,13 @@ namespace VpnSpeedAnalyzer
             plot.Layout(left: 14, right: 4, bottom: 4, top: 2);
         }
 
+        private static void TightenPlotLayout(ScottPlot.Plot plot)
+        {
+            // После AxisAuto ScottPlot может частично пересчитать поля.
+            // Повторно применяем компактный layout перед рендером.
+            plot.Layout(left: 14, right: 4, bottom: 4, top: 2);
+        }
+
         private void ApplyDarkTitleBar()
         {
             try
@@ -172,10 +179,12 @@ namespace VpnSpeedAnalyzer
                 // Обновляем графики
                 _jitterPlot?.Update(xs, _jitterData.ToArray());
                 JitterPlot.Plot.AxisAuto();
+                TightenPlotLayout(JitterPlot.Plot);
                 JitterPlot.Refresh();
 
                 _pingPlot?.Update(xs, _pingData.ToArray());
                 PingPlot.Plot.AxisAuto();
+                TightenPlotLayout(PingPlot.Plot);
                 PingPlot.Refresh();
             }
             catch (Exception ex)
