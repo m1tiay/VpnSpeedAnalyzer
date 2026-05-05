@@ -136,15 +136,15 @@ namespace VpnSpeedAnalyzer
                 axisLabel: text,
                 tick: ticks);
 
-            // Сильно уплотняем рабочую область графика, чтобы шкала была ближе к рамке.
-            plot.Layout(left: 14, right: 4, bottom: 4, top: 2);
+            // Максимально уплотняем рабочую область графика.
+            plot.Layout(left: 8, right: 2, bottom: 0, top: 0);
         }
 
         private static void TightenPlotLayout(ScottPlot.Plot plot)
         {
-            // После AxisAuto ScottPlot может частично пересчитать поля.
-            // Повторно применяем компактный layout перед рендером.
-            plot.Layout(left: 14, right: 4, bottom: 4, top: 2);
+            // После AxisAuto ScottPlot может пересчитать поля.
+            // Повторно применяем плотный layout перед рендером.
+            plot.Layout(left: 8, right: 2, bottom: 0, top: 0);
         }
 
         private void ApplyDarkTitleBar()

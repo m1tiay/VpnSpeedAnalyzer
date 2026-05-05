@@ -34,10 +34,33 @@
         <Style TargetType="GroupBox">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
-            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Padding" Value="8,12,8,8"/>
             <Setter Property="BorderBrush" Value="{StaticResource PanelSecondaryBrush}"/>
-            <Setter Property="BorderThickness" Value="0.8"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Grid SnapsToDevicePixels="True">
+                            <Border CornerRadius="8"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                            </Border>
+                            <Border HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Background="{TemplateBinding Background}"
+                                    Margin="10,-8,0,0"
+                                    Padding="6,0,6,0">
+                                <TextBlock Text="{TemplateBinding Header}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           FontWeight="SemiBold"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style TargetType="Button">
@@ -129,7 +152,7 @@
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
@@ -139,7 +162,7 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{StaticResource PanelSecondaryBrush}"
                                 BorderThickness="1"
-                                CornerRadius="6,6,0,0"
+                                CornerRadius="8"
                                 Margin="0"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
@@ -188,7 +211,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0 0 0 10">
+                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
                         <DockPanel LastChildFill="True">
                             <Grid DockPanel.Dock="Left" VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
@@ -213,8 +236,6 @@
                                           Height="28"
                                           Margin="0"
                                           VerticalAlignment="Center"
-                                          Foreground="{StaticResource TextBrush}"
-                                          Background="{StaticResource PanelSecondaryBrush}"
                                           ItemsSource="{Binding ScoringProfiles}"
                                           SelectedItem="{Binding SelectedScoringProfile}"/>
                             </Grid>
@@ -236,34 +257,18 @@
                         </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid Grid.Row="1" Margin="0,10,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Margin="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" CornerRadius="8" Padding="0">
-                            <Grid>
-                                <sp:WpfPlot x:Name="JitterPlot" Margin="-8,-6,-8,-8"/>
-                                <TextBlock Text="Дрожание (мс)"
-                                           Foreground="{StaticResource TextBrush}"
-                                           FontWeight="SemiBold"
-                                           Margin="10,8,0,0"
-                                           HorizontalAlignment="Left"
-                                           VerticalAlignment="Top"/>
-                            </Grid>
-                        </Border>
-                        <Border Grid.Column="2" Margin="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" CornerRadius="8" Padding="0">
-                            <Grid>
-                                <sp:WpfPlot x:Name="PingPlot" Margin="-8,-6,-8,-8"/>
-                                <TextBlock Text="Пинг (мс)"
-                                           Foreground="{StaticResource TextBrush}"
-                                           FontWeight="SemiBold"
-                                           Margin="10,8,0,0"
-                                           HorizontalAlignment="Left"
-                                           VerticalAlignment="Top"/>
-                            </Grid>
-                        </Border>
+                        <GroupBox Grid.Column="0" Header="Дрожание (мс)" Margin="0">
+                            <sp:WpfPlot x:Name="JitterPlot" Margin="-6,-4,-6,-6"/>
+                        </GroupBox>
+                        <GroupBox Grid.Column="2" Header="Пинг (мс)" Margin="0">
+                            <sp:WpfPlot x:Name="PingPlot" Margin="-6,-4,-6,-6"/>
+                        </GroupBox>
                     </Grid>
 
                     <GridSplitter Grid.Row="2"
@@ -274,7 +279,7 @@
                                   ResizeDirection="Rows"
                                   ShowsPreview="False"/>
 
-                    <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0,8,0,10">
+                    <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0,10,0,10">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
@@ -367,8 +372,6 @@
                                 <ComboBox Width="118" Height="28"
                                           ItemsSource="{Binding ScoringProfiles}"
                                           SelectedItem="{Binding SelectedScoringProfile}"
-                                          Foreground="{StaticResource TextBrush}"
-                                          Background="{StaticResource PanelSecondaryBrush}"
                                           Margin="0,0,12,0"/>
                                 <Button Content="Экспорт топа CSV" Width="150" Command="{Binding ExportTopHostsCsvCommand}"/>
                             </StackPanel>
