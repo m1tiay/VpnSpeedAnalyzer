@@ -1,62 +1,55 @@
 # VPN Speed Analyzer
 
-English | [Русский](README.ru.md)
+[English](README.en.md) | Русский
 
-`VPN Speed Analyzer` is a desktop app on `WPF + .NET 8` for selecting the best VPN host using real network measurements.
+`VPN Speed Analyzer` — настольное приложение на `WPF + .NET 8` для выбора лучшего VPN-хоста по реальным сетевым замерам.
 
-## TL;DR
+## Коротко
 
-Real-time host ranking by ping, jitter, packet loss, download/upload, and `QualityScore (0..100)` with profile presets.
+Приложение в реальном времени сравнивает хосты по ping, jitter, packet loss, download/upload и считает `QualityScore (0..100)` с учетом выбранного профиля.
 
-## Key Features
+## Возможности
 
-- **Smart IP detection:** primary source `ipwho.is`, fallback `ipapi.co`.
-- **Reliable measurements:** speedtest retries, error reason logging, and UI status reporting.
-- **Quality scoring:** host score from `0..100` with profile presets:
-  - `Universal`
-  - `Gaming`
-  - `Streaming`
-- **Host rating screen:** top hosts list + best host recommendation.
-- **Explainable score:** "Why this score?" block for selected result.
-- **Live visualization:** compact ping and jitter charts.
-- **CSV export:** full results export and top-hosts export.
-- **Local logging:** logs stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs` with rotation and cleanup.
+- **Определение IP:** основной источник `ipwho.is`, резервный `ipapi.co`.
+- **Надежные замеры:** ретраи speedtest, логирование причин ошибок, статусы в UI.
+- **Оценка качества:** `QualityScore` для каждого хоста.
+- **Профили оценки:** `Универсальный`, `Игры`, `Стрим`.
+- **Рейтинг хостов:** отдельная вкладка с топом и рекомендацией лучшего хоста.
+- **Пояснение оценки:** блок «Почему этот score?» для выбранной строки.
+- **Визуализация:** графики ping и jitter.
+- **Экспорт:** CSV для общего списка и CSV для топа хостов.
+- **Логи:** хранение в `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs` с ротацией и очисткой.
 
-## Why It Helps
+## Зачем это нужно
 
-Selecting a VPN by country/provider alone often gives unstable latency and throughput.
-This project turns raw measurements into a practical host ranking with clear recommendations.
+Выбор VPN-узла только по стране или названию провайдера часто дает нестабильную задержку и скорость.
+`VPN Speed Analyzer` превращает сырые метрики в понятный рейтинг и практическую рекомендацию.
 
-## Technology
+## Технологии
 
-- **Platform:** `WPF`, `.NET 8`
-- **Charts:** `ScottPlot`
-- **Architecture:** MVVM-style (`ViewModels`, `Models`, `Logic`, `Services`)
+- **Платформа:** `WPF`, `.NET 8`
+- **Графики:** `ScottPlot`
+- **Архитектура:** MVVM-подход (`ViewModels`, `Models`, `Logic`, `Services`)
 - **CI/CD:** GitHub Actions
-- **Distribution:** single-file standalone EXE publish
+- **Дистрибуция:** standalone single EXE
 
-## Quick Start
+## Быстрый старт
 
-1. Clone repository.
-2. Build and run:
+1. Клонировать репозиторий.
+2. Собрать и запустить:
    - `dotnet build -c Release`
    - `dotnet run`
-3. Start monitoring in UI (`Start` button).
-4. Switch scoring profile (`Universal/Gaming/Streaming`) and compare top hosts.
+3. Нажать `Старт` в интерфейсе.
+4. Переключать профиль оценки и выбирать лучший хост из рейтинга.
 
-## Release Build (Single EXE)
+## Сборка релиза (Single EXE)
 
-GitHub Actions builds a standalone Windows EXE (`win-x64`) and uploads it as an artifact.
+В GitHub Actions выполняется публикация standalone EXE для Windows (`win-x64`) с загрузкой артефакта.
 
-You can also publish locally:
+Локальная команда публикации:
 
 `dotnet publish VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained true -o out`
 
-## Notes
-
-- Logs are stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs`.
-- App supports dark UI and status-based monitoring feedback.
-
 ---
 
-If you need the Russian documentation, open [`README.ru.md`](README.ru.md).
+Документация на английском: [`README.en.md`](README.en.md).

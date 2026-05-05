@@ -20,6 +20,10 @@
         <SolidColorBrush x:Key="WaitBrush" Color="#A8B0D9"/>
         <SolidColorBrush x:Key="CheckBrush" Color="#F6C453"/>
         <SolidColorBrush x:Key="ErrorBrush" Color="#FF7AA2"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#232741"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#F2F4FF"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#9146FF"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
 
         <Style TargetType="GroupBox">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
@@ -94,7 +98,7 @@
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
             <Setter Property="Padding" Value="4,2"/>
-            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="MinHeight" Value="28"/>
             <Setter Property="Margin" Value="4,0,0,0"/>
         </Style>
 
@@ -119,6 +123,16 @@
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#2A2F4A"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#2C3255"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
 
@@ -143,8 +157,8 @@
                                 <TextBlock Text="{Binding CurrentCountry}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
                                 <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
                                 <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
-                                <TextBlock Text="Профиль:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
-                                <ComboBox Width="128" Height="30" ItemsSource="{Binding ScoringProfiles}" SelectedItem="{Binding SelectedScoringProfile}"/>
+                                <TextBlock Text="Профиль:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <ComboBox Width="120" Height="28" Margin="0" VerticalAlignment="Center" ItemsSource="{Binding ScoringProfiles}" SelectedItem="{Binding SelectedScoringProfile}"/>
                             </StackPanel>
 
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
@@ -290,7 +304,7 @@
                             </StackPanel>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <ComboBox Width="124" Height="30"
+                                <ComboBox Width="118" Height="28"
                                           ItemsSource="{Binding ScoringProfiles}"
                                           SelectedItem="{Binding SelectedScoringProfile}"
                                           Margin="0,0,12,0"/>
