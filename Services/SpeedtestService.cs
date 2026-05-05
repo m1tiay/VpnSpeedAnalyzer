@@ -19,6 +19,7 @@ namespace VpnSpeedAnalyzer.Services
         private const int ProcessTimeoutMs = 300000; // 5 минут
         private const int MaxAttempts = 3;
         private const int RetryDelayMs = 5000;
+        public string? LastFailureReason { get; private set; }
 
         public SpeedtestService()
         {
@@ -27,6 +28,7 @@ namespace VpnSpeedAnalyzer.Services
 
         public async Task<SpeedtestResult?> RunAsync()
         {
+            LastFailureReason = null;
             try
             {
                 // Проверяем что утилита Speedtest доступна
@@ -34,6 +36,7 @@ namespace VpnSpeedAnalyzer.Services
                 if (speedtestPath == null)
                 {
                     Logger.Write("Утилита Speedtest не найдена в PATH или папке приложения");
+                    LastFailureReason = "Утилита speedtest.exe не найдена";
                     return null;
                 }
 
@@ -53,6 +56,7 @@ namespace VpnSpeedAnalyzer.Services
                     if (proc == null)
                     {
                         Logger.Write("Не удалось запустить процесс Speedtest");
+                        LastFailureReason = "Не удалось запустить процесс speedtest";
                         return null;
                     }
 
@@ -63,6 +67,7 @@ namespace VpnSpeedAnalyzer.Services
                     {
                         proc.Kill();
                         Logger.Write($"Процесс Speedtest превысил таймаут: {ProcessTimeoutMs}мс (попытка {attempt}/{MaxAttempts})");
+                        LastFailureReason = $"Таймаут speedtest ({ProcessTimeoutMs / 1000} сек)";
                         if (attempt < MaxAttempts)
                             await Task.Delay(RetryDelayMs).ConfigureAwait(false);
                         continue;
@@ -73,6 +78,7 @@ namespace VpnSpeedAnalyzer.Services
                         Logger.Write($"Процесс Speedtest завершился с кодом {proc.ExitCode} (попытка {attempt}/{MaxAttempts})");
                         if (!string.IsNullOrWhiteSpace(errorOutput))
                             Logger.Write($"Speedtest stderr: {errorOutput.Trim()}");
+                        LastFailureReason = $"Код завершения speedtest: {proc.ExitCode}";
 
                         if (attempt < MaxAttempts)
                             await Task.Delay(RetryDelayMs).ConfigureAwait(false);
@@ -82,6 +88,7 @@ namespace VpnSpeedAnalyzer.Services
                     if (string.IsNullOrWhiteSpace(output))
                     {
                         Logger.Write($"Speedtest вернул пустой результат (попытка {attempt}/{MaxAttempts})");
+                        LastFailureReason = "Speedtest вернул пустой результат";
                         if (attempt < MaxAttempts)
                             await Task.Delay(RetryDelayMs).ConfigureAwait(false);
                         continue;
@@ -92,26 +99,31 @@ namespace VpnSpeedAnalyzer.Services
                         return parsed;
 
                     Logger.Write($"Не удалось распарсить результат speedtest (попытка {attempt}/{MaxAttempts})");
+                    LastFailureReason = "Не удалось распарсить ответ speedtest";
                     if (attempt < MaxAttempts)
                         await Task.Delay(RetryDelayMs).ConfigureAwait(false);
                 }
 
                 Logger.Write("Все попытки speedtest завершились неуспешно");
+                LastFailureReason ??= "Все попытки speedtest завершились неуспешно";
                 return null;
             }
             catch (FileNotFoundException ex)
             {
                 Logger.Write($"Ошибка Speedtest: {ex.Message}");
+                LastFailureReason = ex.Message;
                 return null;
             }
             catch (InvalidOperationException ex)
             {
                 Logger.Write($"Ошибка процесса Speedtest: {ex.Message}");
+                LastFailureReason = ex.Message;
                 return null;
             }
             catch (Exception ex)
             {
                 Logger.Write($"Неожиданная ошибка Speedtest: {ex.GetType().Name}: {ex.Message}");
+                LastFailureReason = ex.Message;
                 return null;
             }
         }

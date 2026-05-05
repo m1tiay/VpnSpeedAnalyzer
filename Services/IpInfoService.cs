@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ namespace VpnSpeedAnalyzer.Services
         private const string PrimaryIpApiUrl = "https://ipwho.is/";
         private const string FallbackIpApiUrl = "https://ipapi.co/json/";
         private const int HttpTimeoutSeconds = 10;
+        private const string UserAgent = "VpnSpeedAnalyzer/1.0 (+https://github.com/m1tiay/VpnSpeedAnalyzer)";
 
         // Статический HttpClient переиспользуется для всех запросов (предотвращение истощения сокетов)
         private static readonly HttpClient _http = new()
@@ -78,13 +80,16 @@ namespace VpnSpeedAnalyzer.Services
         {
             try
             {
-                var json = await _http.GetStringAsync(PrimaryIpApiUrl).ConfigureAwait(false);
-                if (string.IsNullOrEmpty(json))
+                var json = await SendGetStringAsync(PrimaryIpApiUrl, "ipwho.is").ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(json))
                     return null;
 
                 var dto = JsonSerializer.Deserialize<IpWhoIsResponse>(json);
                 if (dto == null || !dto.Success || string.IsNullOrWhiteSpace(dto.Ip))
+                {
+                    Logger.Write("ipwho.is: ответ не содержит валидных полей success/ip");
                     return null;
+                }
 
                 return new IpInfo
                 {
@@ -92,6 +97,21 @@ namespace VpnSpeedAnalyzer.Services
                     CountryName = dto.Country ?? string.Empty,
                     Asn = dto.Connection?.Asn ?? string.Empty
                 };
+            }
+            catch (HttpRequestException ex)
+            {
+                Logger.Write($"ipwho.is HTTP ошибка: {ex.Message}");
+                return null;
+            }
+            catch (TaskCanceledException ex)
+            {
+                Logger.Write($"ipwho.is таймаут: {ex.Message}");
+                return null;
+            }
+            catch (JsonException ex)
+            {
+                Logger.Write($"ipwho.is ошибка JSON: {ex.Message}");
+                return null;
             }
             catch
             {
@@ -103,13 +123,16 @@ namespace VpnSpeedAnalyzer.Services
         {
             try
             {
-                var json = await _http.GetStringAsync(FallbackIpApiUrl).ConfigureAwait(false);
-                if (string.IsNullOrEmpty(json))
+                var json = await SendGetStringAsync(FallbackIpApiUrl, "ipapi.co").ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(json))
                     return null;
 
                 var dto = JsonSerializer.Deserialize<IpApiCoResponse>(json);
                 if (dto == null || string.IsNullOrWhiteSpace(dto.Ip))
+                {
+                    Logger.Write("ipapi.co: ответ не содержит валидного поля ip");
                     return null;
+                }
 
                 return new IpInfo
                 {
@@ -118,10 +141,44 @@ namespace VpnSpeedAnalyzer.Services
                     Asn = dto.Asn ?? string.Empty
                 };
             }
+            catch (HttpRequestException ex)
+            {
+                Logger.Write($"ipapi.co HTTP ошибка: {ex.Message}");
+                return null;
+            }
+            catch (TaskCanceledException ex)
+            {
+                Logger.Write($"ipapi.co таймаут: {ex.Message}");
+                return null;
+            }
+            catch (JsonException ex)
+            {
+                Logger.Write($"ipapi.co ошибка JSON: {ex.Message}");
+                return null;
+            }
             catch
             {
                 return null;
             }
+        }
+
+        private static async Task<string?> SendGetStringAsync(string url, string sourceName)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.UserAgent.ParseAdd(UserAgent);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            using var response = await _http.SendAsync(request).ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var preview = body.Length > 300 ? body.Substring(0, 300) : body;
+                Logger.Write($"{sourceName}: HTTP {(int)response.StatusCode} {response.ReasonPhrase}. Тело: {preview}");
+                return null;
+            }
+
+            return body;
         }
 
         private sealed class IpWhoIsResponse

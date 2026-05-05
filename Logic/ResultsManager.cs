@@ -17,6 +17,8 @@ namespace VpnSpeedAnalyzer.Logic
         private readonly List<ResultEntry> _allResults = new();
         private bool _isBestOnlyMode;
 
+        public bool IsBestOnlyMode => _isBestOnlyMode;
+
         public ResultsManager(ObservableCollection<ResultEntry> results)
         {
             Logger.Write("ResultsManager конструктор вызван");

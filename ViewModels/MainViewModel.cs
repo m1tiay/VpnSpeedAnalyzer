@@ -114,6 +114,7 @@ namespace VpnSpeedAnalyzer
         public ICommand ToggleBestOnlyCommand { get; }
 
         public string ToggleMonitoringButtonText => _isMonitoring ? "Стоп" : "Старт";
+        public string ToggleBestOnlyButtonText => _resultsManager.IsBestOnlyMode ? "Все результаты" : "Только лучшие";
 
         public MainViewModel()
         {
@@ -136,6 +137,8 @@ namespace VpnSpeedAnalyzer
                 Logger.Write("ViewModel: Monitor.NewResult подписка");
                 _monitor.NewResult += Monitor_NewResult;
                 Logger.Write("ViewModel: Monitor.NewResult подписана");
+                _monitor.StatusMessage += Monitor_StatusMessage;
+                Logger.Write("ViewModel: Monitor.StatusMessage подписана");
 
                 Logger.Write("ViewModel: ResultsManager создание");
                 // Создаём менеджер результатов
@@ -196,6 +199,15 @@ namespace VpnSpeedAnalyzer
             });
         }
 
+        private void Monitor_StatusMessage(object? sender, string message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                StatusText = message;
+                StatusColor = "#FF7AA2";
+            });
+        }
+
         public void Start()
         {
             try
@@ -252,6 +264,7 @@ namespace VpnSpeedAnalyzer
             try
             {
                 _resultsManager.ToggleBestOnly();
+                NotifyPropertyChanged(nameof(ToggleBestOnlyButtonText));
                 Logger.Write("Best results filter applied");
             }
             catch (Exception ex)

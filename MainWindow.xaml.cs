@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using VpnSpeedAnalyzer.Logic;
 using VpnSpeedAnalyzer.Models;
 
@@ -66,6 +68,9 @@ namespace VpnSpeedAnalyzer
                 InitPlots();
                 CriticalLog("InitPlots ОК");
                 Logger.Write("InitPlots ОК");
+
+                // Включаем темную шапку окна в Windows 10/11, чтобы не было белой полосы.
+                Loaded += (_, _) => ApplyDarkTitleBar();
                 
                 CriticalLog(">>> MainWindow конструктор ЗАВЕРШИЛСЯ УСПЕШНО");
             }
@@ -133,6 +138,24 @@ namespace VpnSpeedAnalyzer
                 axisLabel: text,
                 tick: ticks);
         }
+
+        private void ApplyDarkTitleBar()
+        {
+            try
+            {
+                const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+                int useDark = 1;
+                var hwnd = new WindowInteropHelper(this).Handle;
+                _ = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDark, sizeof(int));
+            }
+            catch (Exception ex)
+            {
+                Logger.Write($"Не удалось включить темную шапку окна: {ex.Message}");
+            }
+        }
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
         private void Vm_NewResultArrived(object? sender, SpeedtestResult r)
         {

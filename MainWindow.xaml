@@ -25,7 +25,7 @@
             <Setter Property="Margin" Value="0,0,0,10"/>
             <Setter Property="Padding" Value="8"/>
             <Setter Property="BorderBrush" Value="{StaticResource PanelSecondaryBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderThickness" Value="0.8"/>
             <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
         </Style>
 
@@ -72,11 +72,12 @@
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource PanelSecondaryBrush}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="RowBackground" Value="#1D2033"/>
             <Setter Property="AlternatingRowBackground" Value="#232741"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="#2C3255"/>
-            <Setter Property="VerticalGridLinesBrush" Value="#2C3255"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#2A2F4F"/>
+            <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
             <Setter Property="HeadersVisibility" Value="Column"/>
         </Style>
 
@@ -157,7 +158,7 @@
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Command="{Binding ToggleMonitoringCommand}"/>
             <Button Content="Экспорт CSV" Width="140" Command="{Binding ExportCsvCommand}"/>
-            <Button Content="Только лучшие" Width="150" Command="{Binding ToggleBestOnlyCommand}"/>
+            <Button Content="{Binding ToggleBestOnlyButtonText}" Width="150" Command="{Binding ToggleBestOnlyCommand}"/>
         </StackPanel>
 
     </Grid>

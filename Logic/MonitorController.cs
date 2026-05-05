@@ -21,6 +21,7 @@ namespace VpnSpeedAnalyzer.Logic
         private IpInfo? _lastIp;
 
         public event EventHandler<SpeedtestResult>? NewResult;
+        public event EventHandler<string>? StatusMessage;
 
         public MonitorController(IIpInfoService ipService, ISpeedtestService speedtest)
         {
@@ -105,6 +106,11 @@ namespace VpnSpeedAnalyzer.Logic
                                     result.Country = string.IsNullOrWhiteSpace(info.CountryName) ? result.Country : info.CountryName;
                                     result.Asn = info.Asn;
                                     NewResult?.Invoke(this, result);
+                                }
+                                else
+                                {
+                                    var reason = _speedtest.LastFailureReason ?? "Неизвестная ошибка speedtest";
+                                    StatusMessage?.Invoke(this, $"Ошибка замера: {reason}");
                                 }
                             }
                             else
