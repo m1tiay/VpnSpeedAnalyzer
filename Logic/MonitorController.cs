@@ -106,6 +106,7 @@ namespace VpnSpeedAnalyzer.Logic
                                 {
                                     result.Ip = info.Ip;
                                     result.Country = string.IsNullOrWhiteSpace(info.CountryName) ? result.Country : info.CountryName;
+                                    result.CountryCode = info.CountryCode;
                                     result.Asn = info.Asn;
                                     NewResult?.Invoke(this, result);
                                 }

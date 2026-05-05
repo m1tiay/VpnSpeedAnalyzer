@@ -51,6 +51,7 @@
                             <Border HorizontalAlignment="Left"
                                     VerticalAlignment="Top"
                                     Background="{TemplateBinding Background}"
+                                    CornerRadius="6"
                                     Margin="10,-8,0,0"
                                     Padding="6,0,6,0">
                                 <TextBlock Text="{TemplateBinding Header}"
@@ -123,8 +124,8 @@
         </Style>
 
         <Style TargetType="ComboBox">
-            <Setter Property="Foreground" Value="#1D2033"/>
-            <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Background" Value="#1B1F34"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
             <Setter Property="Padding" Value="4,2"/>
             <Setter Property="MinHeight" Value="28"/>
@@ -152,7 +153,7 @@
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
@@ -174,7 +175,6 @@
                                 <Setter TargetName="TabBorder" Property="Background" Value="#2A2F4A"/>
                                 <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
                                 <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-                                <Setter Property="Panel.ZIndex" Value="10"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="TabBorder" Property="Background" Value="#30365B"/>
@@ -368,7 +368,7 @@
                                 <TextBlock Text="Топ узлов по текущему профилю QualityScore" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"/>
                             </StackPanel>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="16,0,8,0"/>
                                 <ComboBox Width="118" Height="28"
                                           ItemsSource="{Binding ScoringProfiles}"
                                           SelectedItem="{Binding SelectedScoringProfile}"

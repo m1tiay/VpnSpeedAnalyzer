@@ -95,6 +95,7 @@ namespace VpnSpeedAnalyzer.Services
                 {
                     Ip = dto.Ip,
                     CountryName = dto.Country ?? string.Empty,
+                    CountryCode = dto.CountryCode ?? string.Empty,
                     Asn = dto.Connection?.Asn ?? string.Empty
                 };
             }
@@ -138,6 +139,7 @@ namespace VpnSpeedAnalyzer.Services
                 {
                     Ip = dto.Ip,
                     CountryName = dto.CountryName ?? string.Empty,
+                    CountryCode = dto.CountryCode ?? string.Empty,
                     Asn = dto.Asn ?? string.Empty
                 };
             }
@@ -192,6 +194,9 @@ namespace VpnSpeedAnalyzer.Services
             [JsonPropertyName("country")]
             public string? Country { get; set; }
 
+            [JsonPropertyName("country_code")]
+            public string? CountryCode { get; set; }
+
             [JsonPropertyName("connection")]
             public IpWhoIsConnection? Connection { get; set; }
         }
@@ -203,6 +208,9 @@ namespace VpnSpeedAnalyzer.Services
 
             [JsonPropertyName("country_name")]
             public string? CountryName { get; set; }
+
+            [JsonPropertyName("country_code")]
+            public string? CountryCode { get; set; }
 
             [JsonPropertyName("asn")]
             public string? Asn { get; set; }

@@ -33,9 +33,12 @@ namespace VpnSpeedAnalyzer
 
         private readonly List<double> _jitterData = new();
         private readonly List<double> _pingData = new();
+        private readonly List<string> _locationTags = new();
 
         private ScatterPlot? _jitterPlot;
         private ScatterPlot? _pingPlot;
+        private readonly List<Text> _jitterTexts = new();
+        private readonly List<Text> _pingTexts = new();
 
         public MainWindow()
         {
@@ -171,6 +174,7 @@ namespace VpnSpeedAnalyzer
             {
                 _jitterData.Add(r.Jitter);
                 _pingData.Add(r.Ping);
+                _locationTags.Add(BuildLocationTag(r.CountryCode, r.Country));
 
                 double[] xs = Enumerable.Range(0, _jitterData.Count)
                                         .Select(i => (double)i)
@@ -180,16 +184,56 @@ namespace VpnSpeedAnalyzer
                 _jitterPlot?.Update(xs, _jitterData.ToArray());
                 JitterPlot.Plot.AxisAuto();
                 TightenPlotLayout(JitterPlot.Plot);
+                RebuildPointLabels(JitterPlot.Plot, xs, _jitterData, _locationTags, _jitterTexts);
                 JitterPlot.Refresh();
 
                 _pingPlot?.Update(xs, _pingData.ToArray());
                 PingPlot.Plot.AxisAuto();
                 TightenPlotLayout(PingPlot.Plot);
+                RebuildPointLabels(PingPlot.Plot, xs, _pingData, _locationTags, _pingTexts);
                 PingPlot.Refresh();
             }
             catch (Exception ex)
             {
                 Logger.Write("Ошибка при получении результата: " + ex.ToString());
+            }
+        }
+
+        private static string BuildLocationTag(string countryCode, string country)
+        {
+            if (!string.IsNullOrWhiteSpace(countryCode))
+            {
+                var code = countryCode.Trim().ToUpperInvariant();
+                if (code.Length >= 2)
+                    return code.Substring(0, 2);
+            }
+
+            if (string.IsNullOrWhiteSpace(country))
+                return "--";
+            var compact = new string(country.Where(char.IsLetter).ToArray());
+            if (compact.Length >= 2)
+                return compact.Substring(0, 2).ToUpperInvariant();
+
+            return country.Trim().Substring(0, 1).ToUpperInvariant();
+        }
+
+        private static void RebuildPointLabels(
+            ScottPlot.Plot plot,
+            IReadOnlyList<double> xs,
+            IReadOnlyList<double> ys,
+            IReadOnlyList<string> tags,
+            List<Text> cache)
+        {
+            foreach (var t in cache)
+                plot.Remove(t);
+            cache.Clear();
+
+            for (var i = 0; i < xs.Count && i < ys.Count && i < tags.Count; i++)
+            {
+                var text = plot.AddText(tags[i], xs[i], ys[i] + 0.02, color: Color.FromArgb(168, 176, 217));
+                text.FontSize = 8;
+                text.Alignment = Alignment.LowerCenter;
+                cache.Add(text);
             }
         }
     }
