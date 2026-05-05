@@ -44,7 +44,7 @@ jobs:
 
       # Загружаем артефакт в GitHub Actions
       - name: 📤 Загрузка артефакта
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: VpnSpeedAnalyzer-Release
           path: out/VpnSpeedAnalyzer.exe
