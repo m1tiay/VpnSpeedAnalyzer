@@ -147,9 +147,9 @@ namespace VpnSpeedAnalyzer
                 {
                     CurrentIp = r.Ip;
                     CurrentCountry = r.Country;
-                    CurrentAsn = r.Ip; // TODO: Extract ASN from IP if available
+                    CurrentAsn = "N/A";
 
-                    Results.Add(new ResultEntry
+                    _resultsManager.AddResult(new ResultEntry
                     {
                         Ip = r.Ip,
                         Country = r.Country,
@@ -219,7 +219,7 @@ namespace VpnSpeedAnalyzer
         {
             try
             {
-                _resultsManager.ApplyBestOnly();
+                _resultsManager.ToggleBestOnly();
                 Logger.Write("Best results filter applied");
             }
             catch (Exception ex)

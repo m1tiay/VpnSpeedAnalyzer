@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
 using VpnSpeedAnalyzer.Models;
 
@@ -13,8 +14,8 @@ namespace VpnSpeedAnalyzer.Logic
         private const int BestResultsCount = 5;
 
         private readonly ObservableCollection<ResultEntry> _results;
+        private readonly List<ResultEntry> _allResults = new();
         private bool _isBestOnlyMode;
-        private List<ResultEntry>? _allResultsSnapshot;
 
         public ResultsManager(ObservableCollection<ResultEntry> results)
         {
@@ -23,51 +24,57 @@ namespace VpnSpeedAnalyzer.Logic
             Logger.Write("ResultsManager: инициализирован");
         }
 
-        /// <summary>
-        /// Фильтрует результаты для отображения только лучших (с низким ping)
-        /// </summary>
-        public void ApplyBestOnly()
+        public void AddResult(ResultEntry entry)
         {
-            if (_results.Count == 0)
+            if (entry == null)
+                throw new ArgumentNullException(nameof(entry));
+
+            _allResults.Add(entry);
+
+            if (_isBestOnlyMode)
+            {
+                RebuildVisibleResults(GetBestResults());
+                return;
+            }
+
+            _results.Add(entry);
+        }
+
+        /// <summary>
+        /// Переключает режим: полный список / только лучшие результаты
+        /// </summary>
+        public void ToggleBestOnly()
+        {
+            if (_allResults.Count == 0)
             {
                 Logger.Write("Для фильтрации не хватает результатов");
                 return;
             }
 
-            if (!_isBestOnlyMode)
+            _isBestOnlyMode = !_isBestOnlyMode;
+
+            if (_isBestOnlyMode)
             {
-                _allResultsSnapshot = _results.ToList();
-                var best = _allResultsSnapshot
-                    .OrderBy(r => r.Score)
-                    .Take(BestResultsCount)
-                    .ToList();
-
-                _results.Clear();
-
-                foreach (var r in best)
-                {
-                    _results.Add(r);
-                }
-
-                _isBestOnlyMode = true;
-                Logger.Write($"Оставлено лучших результатов: {best.Count}");
+                RebuildVisibleResults(GetBestResults());
+                Logger.Write($"Оставлено лучших результатов: {Math.Min(BestResultsCount, _allResults.Count)}");
                 return;
             }
 
-            if (_allResultsSnapshot == null)
-            {
-                Logger.Write("Снимок всех результатов недоступен, нечего восстанавливать");
-                return;
-            }
-
-            _results.Clear();
-            foreach (var r in _allResultsSnapshot)
-            {
-                _results.Add(r);
-            }
-
-            _isBestOnlyMode = false;
+            RebuildVisibleResults(_allResults);
             Logger.Write("Восстановлен полный список результатов");
+        }
+
+        private List<ResultEntry> GetBestResults() =>
+            _allResults
+                .OrderBy(r => r.Score)
+                .Take(BestResultsCount)
+                .ToList();
+
+        private void RebuildVisibleResults(IEnumerable<ResultEntry> source)
+        {
+            _results.Clear();
+            foreach (var entry in source)
+                _results.Add(entry);
         }
     }
 }

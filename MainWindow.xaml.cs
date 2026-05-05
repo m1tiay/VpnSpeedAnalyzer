@@ -113,24 +113,21 @@ namespace VpnSpeedAnalyzer
         {
             try
             {
-                Dispatcher.Invoke(() =>
-                {
-                    _jitterData.Add(r.Jitter);
-                    _pingData.Add(r.Ping);
+                _jitterData.Add(r.Jitter);
+                _pingData.Add(r.Ping);
 
-                    double[] xs = Enumerable.Range(0, _jitterData.Count)
-                                            .Select(i => (double)i)
-                                            .ToArray();
+                double[] xs = Enumerable.Range(0, _jitterData.Count)
+                                        .Select(i => (double)i)
+                                        .ToArray();
 
-                    // Обновляем графики
-                    _jitterPlot?.Update(xs, _jitterData.ToArray());
-                    JitterPlot.Plot.AxisAuto();
-                    JitterPlot.Refresh();
+                // Обновляем графики
+                _jitterPlot?.Update(xs, _jitterData.ToArray());
+                JitterPlot.Plot.AxisAuto();
+                JitterPlot.Refresh();
 
-                    _pingPlot?.Update(xs, _pingData.ToArray());
-                    PingPlot.Plot.AxisAuto();
-                    PingPlot.Refresh();
-                });
+                _pingPlot?.Update(xs, _pingData.ToArray());
+                PingPlot.Plot.AxisAuto();
+                PingPlot.Refresh();
             }
             catch (Exception ex)
             {
