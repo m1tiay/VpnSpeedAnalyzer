@@ -90,14 +90,14 @@ namespace VpnSpeedAnalyzer
                     xs: new double[] { 0 },
                     ys: new double[] { 0 },
                     color: Color.FromArgb(89, 217, 183),
-                    lineWidth: 2.5);
+                    lineWidth: 2f);
                 _jitterPlot.MarkerSize = 0;
 
                 _pingPlot = PingPlot.Plot.AddScatter(
                     xs: new double[] { 0 },
                     ys: new double[] { 0 },
                     color: Color.FromArgb(145, 70, 255),
-                    lineWidth: 2.5);
+                    lineWidth: 2f);
                 _pingPlot.MarkerSize = 0;
 
                 JitterPlot.Plot.Title("Дрожание (мс)");
@@ -131,8 +131,7 @@ namespace VpnSpeedAnalyzer
                 dataBackground: dataBg,
                 grid: grid,
                 axisLabel: text,
-                tick: ticks,
-                title: text);
+                tick: ticks);
         }
 
         private void Vm_NewResultArrived(object? sender, SpeedtestResult r)
