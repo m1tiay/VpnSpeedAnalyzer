@@ -1,12 +1,12 @@
 # VPN Speed Analyzer
 
-`VPN Speed Analyzer` is a desktop app on `WPF + .NET 8` that helps you quickly find the best VPN host based on real measurements, not guesswork.
+English | [Русский](README.ru.md)
 
-The app monitors network state, runs speed tests, calculates a unified quality score, and provides clear recommendations for the optimal host right now.
+`VPN Speed Analyzer` is a desktop app on `WPF + .NET 8` for selecting the best VPN host using real network measurements.
 
 ## TL;DR
 
-Fast VPN host selection using live metrics: ping, jitter, packet loss, download/upload, and `QualityScore (0..100)` with profile-based ranking.
+Real-time host ranking by ping, jitter, packet loss, download/upload, and `QualityScore (0..100)` with profile presets.
 
 ## Key Features
 
@@ -22,10 +22,10 @@ Fast VPN host selection using live metrics: ping, jitter, packet loss, download/
 - **CSV export:** full results export and top-hosts export.
 - **Local logging:** logs stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs` with rotation and cleanup.
 
-## Why This Project
+## Why It Helps
 
-Choosing a VPN endpoint by country or provider name often leads to unstable latency and speed.  
-`VPN Speed Analyzer` solves this by turning raw network checks into actionable rankings and recommendations.
+Selecting a VPN by country/provider alone often gives unstable latency and throughput.
+This project turns raw measurements into a practical host ranking with clear recommendations.
 
 ## Technology
 
@@ -44,20 +44,19 @@ Choosing a VPN endpoint by country or provider name often leads to unstable late
 3. Start monitoring in UI (`Start` button).
 4. Switch scoring profile (`Universal/Gaming/Streaming`) and compare top hosts.
 
-## Build Release EXE
+## Release Build (Single EXE)
 
-GitHub Actions pipeline builds a standalone single EXE for Windows (`win-x64`).
+GitHub Actions builds a standalone Windows EXE (`win-x64`) and uploads it as an artifact.
 
 You can also publish locally:
 
 `dotnet publish VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained true -o out`
 
-## Roadmap Ideas
+## Notes
 
-- Advanced ranking filters (time ranges, profile snapshots)
-- Historical trend analytics
-- Optional notifications on host quality drops
+- Logs are stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs`.
+- App supports dark UI and status-based monitoring feedback.
 
 ---
 
-Built to make VPN quality visible, measurable, and easy to optimize.
+If you need the Russian documentation, open [`README.ru.md`](README.ru.md).
