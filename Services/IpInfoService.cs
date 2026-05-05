@@ -89,7 +89,8 @@ namespace VpnSpeedAnalyzer.Services
                 return new IpInfo
                 {
                     Ip = dto.Ip,
-                    CountryName = dto.Country ?? string.Empty
+                    CountryName = dto.Country ?? string.Empty,
+                    Asn = dto.Connection?.Asn ?? string.Empty
                 };
             }
             catch
@@ -113,7 +114,8 @@ namespace VpnSpeedAnalyzer.Services
                 return new IpInfo
                 {
                     Ip = dto.Ip,
-                    CountryName = dto.CountryName ?? string.Empty
+                    CountryName = dto.CountryName ?? string.Empty,
+                    Asn = dto.Asn ?? string.Empty
                 };
             }
             catch
@@ -132,6 +134,9 @@ namespace VpnSpeedAnalyzer.Services
 
             [JsonPropertyName("country")]
             public string? Country { get; set; }
+
+            [JsonPropertyName("connection")]
+            public IpWhoIsConnection? Connection { get; set; }
         }
 
         private sealed class IpApiCoResponse
@@ -141,6 +146,15 @@ namespace VpnSpeedAnalyzer.Services
 
             [JsonPropertyName("country_name")]
             public string? CountryName { get; set; }
+
+            [JsonPropertyName("asn")]
+            public string? Asn { get; set; }
+        }
+
+        private sealed class IpWhoIsConnection
+        {
+            [JsonPropertyName("asn")]
+            public string? Asn { get; set; }
         }
     }
 }

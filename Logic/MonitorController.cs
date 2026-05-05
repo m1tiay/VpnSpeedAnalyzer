@@ -100,7 +100,12 @@ namespace VpnSpeedAnalyzer.Logic
                                 Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
 
                                 if (result != null)
+                                {
+                                    result.Ip = info.Ip;
+                                    result.Country = string.IsNullOrWhiteSpace(info.CountryName) ? result.Country : info.CountryName;
+                                    result.Asn = info.Asn;
                                     NewResult?.Invoke(this, result);
+                                }
                             }
                             else
                             {

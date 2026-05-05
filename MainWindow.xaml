@@ -7,9 +7,88 @@
         mc:Ignorable="d"
         Title="VPN Speed Analyzer"
         Width="1100" Height="700"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Background="#141622">
+    <Window.Resources>
+        <SolidColorBrush x:Key="BgBrush" Color="#141622"/>
+        <SolidColorBrush x:Key="PanelBrush" Color="#1D2033"/>
+        <SolidColorBrush x:Key="PanelSecondaryBrush" Color="#232741"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#9146FF"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#F2F4FF"/>
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#A8B0D9"/>
+        <SolidColorBrush x:Key="OkBrush" Color="#59D9B7"/>
+        <SolidColorBrush x:Key="WaitBrush" Color="#A8B0D9"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="#FF7AA2"/>
 
-    <Grid Margin="10">
+        <Style TargetType="GroupBox">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PanelSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#2C3255"/>
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#B07DFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#171A2C"/>
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#7D4DD9"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PanelSecondaryBrush}"/>
+            <Setter Property="RowBackground" Value="#1D2033"/>
+            <Setter Property="AlternatingRowBackground" Value="#232741"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#2C3255"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#2C3255"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12" Background="{StaticResource BgBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="2*"/>
@@ -19,52 +98,66 @@
         </Grid.RowDefinitions>
 
         <!-- TOP PANEL -->
-        <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
-            <TextBlock Text="IP:" FontWeight="Bold" Margin="0 0 10 0"/>
-            <TextBlock Text="{Binding CurrentIp}" Margin="0 0 20 0"/>
+        <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0 0 0 10">
+            <DockPanel LastChildFill="True">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <TextBlock Text="IP:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
+                    <TextBlock Text="{Binding CurrentIp}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
 
-            <TextBlock Text="{Binding CurrentCountry}" Margin="0 0 20 0"/>
-            <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 10 0"/>
-            <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 20 0"/>
+                    <TextBlock Text="Страна:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
+                    <TextBlock Text="{Binding CurrentCountry}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
 
-            <TextBlock Text="{Binding StatusText}" FontWeight="Bold" Foreground="DarkGreen"/>
-        </StackPanel>
+                    <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
+                    <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource OkBrush}" Margin="0,0,4,0"/>
+                        <TextBlock Text="ОК" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource WaitBrush}" Margin="0,0,4,0"/>
+                        <TextBlock Text="Ожидание" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource ErrorBrush}" Margin="0,0,4,0"/>
+                        <TextBlock Text="Ошибка" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+        </Border>
 
         <!-- JITTER PLOT -->
-        <GroupBox Header="Jitter" Grid.Row="1" Margin="0 0 0 10">
+        <GroupBox Header="Дрожание (мс)" Grid.Row="1">
             <sp:WpfPlot x:Name="JitterPlot"/>
         </GroupBox>
 
         <!-- PING PLOT -->
-        <GroupBox Header="Ping" Grid.Row="2" Margin="0 0 0 10">
+        <GroupBox Header="Пинг (мс)" Grid.Row="2">
             <sp:WpfPlot x:Name="PingPlot"/>
         </GroupBox>
 
         <!-- RESULTS TABLE -->
-        <DataGrid Grid.Row="3"
-                  ItemsSource="{Binding Results}"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  Margin="0 0 0 10">
-
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
-                <DataGridTextColumn Header="Country" Binding="{Binding Country}" Width="*"/>
-                <DataGridTextColumn Header="Ping" Binding="{Binding Ping}" Width="*"/>
-                <DataGridTextColumn Header="Jitter" Binding="{Binding Jitter}" Width="*"/>
-                <DataGridTextColumn Header="Loss" Binding="{Binding Loss}" Width="*"/>
-                <DataGridTextColumn Header="Download" Binding="{Binding Download}" Width="*"/>
-                <DataGridTextColumn Header="Upload" Binding="{Binding Upload}" Width="*"/>
-                <DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="*"/>
-            </DataGrid.Columns>
-        </DataGrid>
+        <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0 0 0 10">
+            <DataGrid ItemsSource="{Binding Results}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
+                    <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
+                    <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
+                    <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
+                    <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
+                    <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="*"/>
+                    <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="*"/>
+                    <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
 
         <!-- BUTTONS -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Content="Start" Width="120" Margin="5" Command="{Binding StartCommand}"/>
-            <Button Content="Stop" Width="120" Margin="5" Command="{Binding StopCommand}"/>
-            <Button Content="Export CSV" Width="120" Margin="5" Command="{Binding ExportCsvCommand}"/>
-            <Button Content="Show Best Only" Width="150" Margin="5" Command="{Binding ToggleBestOnlyCommand}"/>
+            <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Command="{Binding ToggleMonitoringCommand}"/>
+            <Button Content="Экспорт CSV" Width="140" Command="{Binding ExportCsvCommand}"/>
+            <Button Content="Только лучшие" Width="150" Command="{Binding ToggleBestOnlyCommand}"/>
         </StackPanel>
 
     </Grid>

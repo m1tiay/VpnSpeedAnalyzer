@@ -22,6 +22,7 @@ namespace VpnSpeedAnalyzer
         private string _currentCountry = "";
         private string _currentAsn = "";
         private string _statusText = "Остановлено";
+        private string _statusColor = "#A8B0D9";
         private bool _isMonitoring;
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -90,10 +91,29 @@ namespace VpnSpeedAnalyzer
             }
         }
 
+        /// <summary>
+        /// Цвет текста статуса в формате HEX (поддерживает стиль палитры интерфейса)
+        /// </summary>
+        public string StatusColor
+        {
+            get => _statusColor;
+            set
+            {
+                if (_statusColor != value)
+                {
+                    _statusColor = value;
+                    NotifyPropertyChanged(nameof(StatusColor));
+                }
+            }
+        }
+
         public ICommand StartCommand { get; }
         public ICommand StopCommand { get; }
+        public ICommand ToggleMonitoringCommand { get; }
         public ICommand ExportCsvCommand { get; }
         public ICommand ToggleBestOnlyCommand { get; }
+
+        public string ToggleMonitoringButtonText => _isMonitoring ? "Стоп" : "Старт";
 
         public MainViewModel()
         {
@@ -126,6 +146,7 @@ namespace VpnSpeedAnalyzer
                 // Создаём команды
                 StartCommand = new RelayCommand(_ => Start());
                 StopCommand = new RelayCommand(_ => Stop());
+                ToggleMonitoringCommand = new RelayCommand(_ => ToggleMonitoring());
                 ExportCsvCommand = new RelayCommand(_ => ExportCsv());
                 ToggleBestOnlyCommand = new RelayCommand(_ => ToggleBestOnly());
                 Logger.Write("ViewModel: Команды ОК");
@@ -147,27 +168,30 @@ namespace VpnSpeedAnalyzer
                 {
                     CurrentIp = r.Ip;
                     CurrentCountry = r.Country;
-                    CurrentAsn = "N/A";
+                    CurrentAsn = string.IsNullOrWhiteSpace(r.Asn) ? "N/A" : r.Asn;
 
                     _resultsManager.AddResult(new ResultEntry
                     {
                         Ip = r.Ip,
                         Country = r.Country,
-                        Timestamp = r.Timestamp.ToString("O"),
-                        Ping = r.Ping,
-                        Jitter = r.Jitter,
-                        Loss = r.Loss,
-                        Download = r.Download,
-                        Upload = r.Upload
+                        Timestamp = r.Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss"),
+                        Ping = Math.Round(r.Ping, 2),
+                        Jitter = Math.Round(r.Jitter, 2),
+                        Loss = Math.Round(r.Loss, 2),
+                        Download = Math.Round(r.Download, 2),
+                        Upload = Math.Round(r.Upload, 2)
                     });
 
-                    StatusText = $"✓ Last check: {DateTime.Now:HH:mm:ss}";
+                    StatusText = $"✓ Последняя проверка: {DateTime.Now:HH:mm:ss}";
+                    StatusColor = "#59D9B7";
 
                     NewResultArrived?.Invoke(this, r);
                 }
                 catch (Exception ex)
                 {
                     Logger.Write($"Monitor_NewResult error: {ex.Message}");
+                    StatusText = "Ошибка обновления результата";
+                    StatusColor = "#FF7AA2";
                 }
             });
         }
@@ -183,13 +207,17 @@ namespace VpnSpeedAnalyzer
                 }
 
                 _isMonitoring = true;
-                StatusText = "Running...";
+                StatusText = "Мониторинг запущен";
+                StatusColor = "#59D9B7";
                 _monitor.Start();
+                NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
                 Logger.Write("Monitoring started");
             }
             catch (Exception ex)
             {
                 Logger.Write($"Start error: {ex.Message}");
+                StatusText = "Ошибка запуска";
+                StatusColor = "#FF7AA2";
                 MessageBox.Show($"Error starting monitor: {ex.Message}");
             }
         }
@@ -205,13 +233,17 @@ namespace VpnSpeedAnalyzer
                 }
 
                 _isMonitoring = false;
-                StatusText = "Stopped";
+                StatusText = "Остановлено";
+                StatusColor = "#A8B0D9";
                 _monitor.Stop();
+                NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
                 Logger.Write("Monitoring stopped");
             }
             catch (Exception ex)
             {
                 Logger.Write($"Stop error: {ex.Message}");
+                StatusText = "Ошибка остановки";
+                StatusColor = "#FF7AA2";
             }
         }
 
@@ -227,6 +259,14 @@ namespace VpnSpeedAnalyzer
                 Logger.Write($"ToggleBestOnly error: {ex.Message}");
                 MessageBox.Show($"Error applying filter: {ex.Message}");
             }
+        }
+
+        public void ToggleMonitoring()
+        {
+            if (_isMonitoring)
+                Stop();
+            else
+                Start();
         }
 
         public void ExportCsv()

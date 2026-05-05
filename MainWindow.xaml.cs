@@ -1,6 +1,7 @@
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -81,18 +82,23 @@ namespace VpnSpeedAnalyzer
         {
             try
             {
+                ApplyPlotTheme(JitterPlot);
+                ApplyPlotTheme(PingPlot);
+
                 // Создаём пустые графики
                 _jitterPlot = JitterPlot.Plot.AddScatter(
                     xs: new double[] { 0 },
                     ys: new double[] { 0 },
-                    color: System.Drawing.Color.DeepSkyBlue,
-                    lineWidth: 2);
+                    color: Color.FromArgb(89, 217, 183),
+                    lineWidth: 2.5);
+                _jitterPlot.MarkerSize = 0;
 
                 _pingPlot = PingPlot.Plot.AddScatter(
                     xs: new double[] { 0 },
                     ys: new double[] { 0 },
-                    color: System.Drawing.Color.OrangeRed,
-                    lineWidth: 2);
+                    color: Color.FromArgb(145, 70, 255),
+                    lineWidth: 2.5);
+                _pingPlot.MarkerSize = 0;
 
                 JitterPlot.Plot.Title("Дрожание (мс)");
                 JitterPlot.Plot.XLabel("Номер теста");
@@ -107,6 +113,26 @@ namespace VpnSpeedAnalyzer
                 Logger.Write("Ошибка инициализации графиков: " + ex.ToString());
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Единая визуальная тема графиков в стиле приложения
+        /// </summary>
+        private static void ApplyPlotTheme(ScottPlot.WPF.WpfPlot plotControl)
+        {
+            var figureBg = Color.FromArgb(29, 32, 51);
+            var dataBg = Color.FromArgb(35, 39, 65);
+            var grid = Color.FromArgb(58, 64, 99);
+            var text = Color.FromArgb(242, 244, 255);
+            var ticks = Color.FromArgb(168, 176, 217);
+
+            plotControl.Plot.Style(
+                figureBackground: figureBg,
+                dataBackground: dataBg,
+                grid: grid,
+                axisLabel: text,
+                tick: ticks,
+                title: text);
         }
 
         private void Vm_NewResultArrived(object? sender, SpeedtestResult r)

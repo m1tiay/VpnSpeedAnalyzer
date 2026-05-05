@@ -1,7 +1,7 @@
 namespace VpnSpeedAnalyzer.Models
 {
     /// <summary>
-    /// Текущая информация аб IP адресе полученная от ipapi.co
+    /// Текущая информация об IP-адресе, полученная от внешнего API
     /// </summary>
     public class IpInfo
     {
@@ -10,5 +10,8 @@ namespace VpnSpeedAnalyzer.Models
 
         /// <summary>Наименование страны</summary>
         public string CountryName { get; set; } = "";
+
+        /// <summary>Номер автономной системы (ASN)</summary>
+        public string Asn { get; set; } = "";
     }
 }

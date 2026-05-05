@@ -17,6 +17,8 @@ namespace VpnSpeedAnalyzer.Services
         // Магическое число: 125000 = 1,000,000 бит / 8 байт (конвертация битов в Мбит/с)
         private const double BitsPerMbpsConversionFactor = 125000.0;
         private const int ProcessTimeoutMs = 300000; // 5 минут
+        private const int MaxAttempts = 3;
+        private const int RetryDelayMs = 5000;
 
         public SpeedtestService()
         {
@@ -35,45 +37,67 @@ namespace VpnSpeedAnalyzer.Services
                     return null;
                 }
 
-                var psi = new ProcessStartInfo
+                for (int attempt = 1; attempt <= MaxAttempts; attempt++)
                 {
-                    FileName = speedtestPath,
-                    Arguments = "--format=json",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = speedtestPath,
+                        Arguments = "--format=json",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
 
-                using var proc = Process.Start(psi);
-                if (proc == null)
-                {
-                    Logger.Write("Не удалось запустить процесс Speedtest");
-                    return null;
+                    using var proc = Process.Start(psi);
+                    if (proc == null)
+                    {
+                        Logger.Write("Не удалось запустить процесс Speedtest");
+                        return null;
+                    }
+
+                    string output = await proc.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+                    string errorOutput = await proc.StandardError.ReadToEndAsync().ConfigureAwait(false);
+
+                    if (!proc.WaitForExit(ProcessTimeoutMs))
+                    {
+                        proc.Kill();
+                        Logger.Write($"Процесс Speedtest превысил таймаут: {ProcessTimeoutMs}мс (попытка {attempt}/{MaxAttempts})");
+                        if (attempt < MaxAttempts)
+                            await Task.Delay(RetryDelayMs).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    if (proc.ExitCode != 0)
+                    {
+                        Logger.Write($"Процесс Speedtest завершился с кодом {proc.ExitCode} (попытка {attempt}/{MaxAttempts})");
+                        if (!string.IsNullOrWhiteSpace(errorOutput))
+                            Logger.Write($"Speedtest stderr: {errorOutput.Trim()}");
+
+                        if (attempt < MaxAttempts)
+                            await Task.Delay(RetryDelayMs).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(output))
+                    {
+                        Logger.Write($"Speedtest вернул пустой результат (попытка {attempt}/{MaxAttempts})");
+                        if (attempt < MaxAttempts)
+                            await Task.Delay(RetryDelayMs).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    var parsed = ParseSpeedtestOutput(output);
+                    if (parsed != null)
+                        return parsed;
+
+                    Logger.Write($"Не удалось распарсить результат speedtest (попытка {attempt}/{MaxAttempts})");
+                    if (attempt < MaxAttempts)
+                        await Task.Delay(RetryDelayMs).ConfigureAwait(false);
                 }
 
-                string output = await proc.StandardOutput.ReadToEndAsync()
-                    .ConfigureAwait(false);
-                
-                if (!proc.WaitForExit(ProcessTimeoutMs))
-                {
-                    proc.Kill();
-                    Logger.Write($"Процесс Speedtest превысил таймаут: {ProcessTimeoutMs}мс");
-                    return null;
-                }
-
-                if (proc.ExitCode != 0)
-                {
-                    Logger.Write($"Процесс Speedtest завершился с кодом {proc.ExitCode}");
-                    return null;
-                }
-
-                if (string.IsNullOrEmpty(output))
-                {
-                    Logger.Write("Speedtest вернул пустой результат");
-                    return null;
-                }
-
-                return ParseSpeedtestOutput(output);
+                Logger.Write("Все попытки speedtest завершились неуспешно");
+                return null;
             }
             catch (FileNotFoundException ex)
             {

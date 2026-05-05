@@ -13,6 +13,9 @@ namespace VpnSpeedAnalyzer.Models
         /// <summary>Страна где находится сервер теста</summary>
         public string Country { get; set; } = "";
 
+        /// <summary>Номер автономной системы (ASN) текущего внешнего IP</summary>
+        public string Asn { get; set; } = "";
+
         /// <summary>Когда был выполнен тест</summary>
         public DateTime Timestamp { get; set; }
 
