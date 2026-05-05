@@ -40,5 +40,11 @@ namespace VpnSpeedAnalyzer.Models
 
         /// <summary>Медаль для топ-3</summary>
         public string RankBadge { get; set; } = "";
+
+        /// <summary>Символ маркера в таблице рейтинга</summary>
+        public string RankMarker { get; set; } = "";
+
+        /// <summary>HEX-цвет маркера в таблице рейтинга</summary>
+        public string RankMarkerColor { get; set; } = "#A8B0D9";
     }
 }

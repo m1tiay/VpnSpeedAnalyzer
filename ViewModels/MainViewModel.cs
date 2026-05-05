@@ -555,6 +555,14 @@ namespace VpnSpeedAnalyzer
                     3 => "🥉",
                     _ => ""
                 };
+                item.RankMarker = "●";
+                item.RankMarkerColor = item.Rank switch
+                {
+                    1 => "#F6C453",
+                    2 => "#B8C0D8",
+                    3 => "#D08A5C",
+                    _ => "#5E668F"
+                };
                 TopHosts.Add(item);
             }
         }

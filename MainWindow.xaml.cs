@@ -105,13 +105,11 @@ namespace VpnSpeedAnalyzer
                     lineWidth: 2f);
                 _pingPlot.MarkerSize = 0;
 
-                JitterPlot.Plot.Title("Дрожание (мс)");
-                JitterPlot.Plot.XLabel("Номер теста");
-                JitterPlot.Plot.YLabel("мс");
-
-                PingPlot.Plot.Title("Пинг (мс)");
-                PingPlot.Plot.XLabel("Номер теста");
-                PingPlot.Plot.YLabel("мс");
+                // Заголовки вынесены в XAML, поэтому на графике оставляем только данные.
+                JitterPlot.Plot.XLabel(string.Empty);
+                JitterPlot.Plot.YLabel(string.Empty);
+                PingPlot.Plot.XLabel(string.Empty);
+                PingPlot.Plot.YLabel(string.Empty);
             }
             catch (Exception ex)
             {
