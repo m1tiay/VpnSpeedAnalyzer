@@ -86,6 +86,7 @@ namespace VpnSpeedAnalyzer.Logic
                 {
                     try
                     {
+                        StatusMessage?.Invoke(this, "CHECKING: Идет проверка IP и состояния соединения...");
                         Logger.Write("Проверяем IP адрес...");
                         var info = await _ipService.GetCurrentAsync()
                             .ConfigureAwait(false);
@@ -95,6 +96,7 @@ namespace VpnSpeedAnalyzer.Logic
                         {
                             if (_lastIp == null || info.Ip != _lastIp.Ip)
                             {
+                                StatusMessage?.Invoke(this, "CHECKING: Идет проверка канала, запускаем speedtest...");
                                 Logger.Write("Ип-адрес изменился, запускаем тест скорости...");
                                 var result = await _speedtest.RunAsync()
                                     .ConfigureAwait(false);
@@ -110,12 +112,13 @@ namespace VpnSpeedAnalyzer.Logic
                                 else
                                 {
                                     var reason = _speedtest.LastFailureReason ?? "Неизвестная ошибка speedtest";
-                                    StatusMessage?.Invoke(this, $"Ошибка замера: {reason}");
+                                    StatusMessage?.Invoke(this, $"ERROR: Ошибка замера: {reason}");
                                 }
                             }
                             else
                             {
                                 Logger.Write("Ип-адрес не изменился, пропускаем тест скорости");
+                                StatusMessage?.Invoke(this, "INFO: Идет проверка, изменений IP не обнаружено");
                             }
 
                             _lastIp = info;
@@ -132,6 +135,7 @@ namespace VpnSpeedAnalyzer.Logic
                     catch (Exception ex)
                     {
                         Logger.Write($"Monitor loop error: {ex.GetType().Name}: {ex.Message}");
+                        StatusMessage?.Invoke(this, $"ERROR: Сбой цикла мониторинга: {ex.Message}");
                         // Continue looping even on error
                         try
                         {

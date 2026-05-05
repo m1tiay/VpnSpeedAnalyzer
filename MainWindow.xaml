@@ -18,6 +18,7 @@
         <SolidColorBrush x:Key="MutedTextBrush" Color="#A8B0D9"/>
         <SolidColorBrush x:Key="OkBrush" Color="#59D9B7"/>
         <SolidColorBrush x:Key="WaitBrush" Color="#A8B0D9"/>
+        <SolidColorBrush x:Key="CheckBrush" Color="#F6C453"/>
         <SolidColorBrush x:Key="ErrorBrush" Color="#FF7AA2"/>
 
         <Style TargetType="GroupBox">
@@ -98,116 +99,218 @@
     </Window.Resources>
 
     <Grid Margin="12" Background="{StaticResource BgBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="1.25*"/>
-            <RowDefinition Height="6"/>
-            <RowDefinition Height="2.1*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <TabControl Background="{StaticResource BgBrush}" BorderThickness="0">
+            <TabItem Header="Мониторинг">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="1.25*"/>
+                        <RowDefinition Height="6"/>
+                        <RowDefinition Height="2.1*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-        <!-- TOP PANEL -->
-        <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0 0 0 10">
-            <DockPanel LastChildFill="True">
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                    <TextBlock Text="IP:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
-                    <TextBlock Text="{Binding CurrentIp}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
+                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0 0 0 10">
+                        <DockPanel LastChildFill="True">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                                <TextBlock Text="IP:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
+                                <TextBlock Text="{Binding CurrentIp}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="Страна:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
+                                <TextBlock Text="{Binding CurrentCountry}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
+                                <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="Профиль:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
+                                <ComboBox Width="150" ItemsSource="{Binding ScoringProfiles}" SelectedItem="{Binding SelectedScoringProfile}"/>
+                            </StackPanel>
 
-                    <TextBlock Text="Страна:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
-                    <TextBlock Text="{Binding CurrentCountry}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
+                            <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
+                                <TextBlock Text="{Binding RecommendationText}" HorizontalAlignment="Right" Margin="0,4,0,0" Foreground="{StaticResource TextBrush}" FontSize="11"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                    <Ellipse Width="8" Height="8" Fill="{StaticResource OkBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="ОК" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
+                                    <Ellipse Width="8" Height="8" Fill="{StaticResource CheckBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Проверка" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
+                                    <Ellipse Width="8" Height="8" Fill="{StaticResource WaitBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Ожидание" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
+                                    <Ellipse Width="8" Height="8" Fill="{StaticResource ErrorBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Ошибка" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
 
-                    <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
-                    <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
+                    <Grid Grid.Row="1" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <GroupBox Header="Дрожание (мс)" Grid.Column="0" Margin="0">
+                            <sp:WpfPlot x:Name="JitterPlot"/>
+                        </GroupBox>
+                        <GroupBox Header="Пинг (мс)" Grid.Column="2" Margin="0">
+                            <sp:WpfPlot x:Name="PingPlot"/>
+                        </GroupBox>
+                    </Grid>
 
-                    <TextBlock Text="Профиль:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
-                    <ComboBox Width="150"
-                              ItemsSource="{Binding ScoringProfiles}"
-                              SelectedItem="{Binding SelectedScoringProfile}"/>
-                </StackPanel>
+                    <GridSplitter Grid.Row="2"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Center"
+                                  Height="6"
+                                  Background="{StaticResource PanelSecondaryBrush}"
+                                  ResizeDirection="Rows"
+                                  ShowsPreview="True"/>
 
-                <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
-                    <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
-                    <TextBlock Text="{Binding RecommendationText}" HorizontalAlignment="Right" Margin="0,4,0,0" Foreground="{StaticResource TextBrush}" FontSize="11"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
-                        <Ellipse Width="8" Height="8" Fill="{StaticResource OkBrush}" Margin="0,0,4,0"/>
-                        <TextBlock Text="ОК" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
-                        <Ellipse Width="8" Height="8" Fill="{StaticResource WaitBrush}" Margin="0,0,4,0"/>
-                        <TextBlock Text="Ожидание" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
-                        <Ellipse Width="8" Height="8" Fill="{StaticResource ErrorBrush}" Margin="0,0,4,0"/>
-                        <TextBlock Text="Ошибка" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                    <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0 0 0 10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2.3*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <DataGrid ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult}" AutoGenerateColumns="False" CanUserAddRows="False" Grid.Column="0" FontSize="12">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
+                                    <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
+                                    <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="0.8*"/>
+                                    <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
+                                    <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
+                                    <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
+                                    <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="*"/>
+                                    <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="*"/>
+                                    <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <Border Grid.Row="1" Grid.Column="0" Margin="0,8,0,0" Padding="10" Background="#171A2C" CornerRadius="8">
+                                <StackPanel>
+                                    <TextBlock Text="Почему этот score?" Foreground="{StaticResource MutedTextBrush}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding SelectedResult.ScoreDetails, TargetNullValue='Выбери строку в таблице, чтобы увидеть расшифровку оценки.'}"
+                                               Foreground="{StaticResource TextBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Column="2" Grid.RowSpan="2" Background="#171A2C" CornerRadius="8" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="Рейтинг хостов" Foreground="{StaticResource TextBrush}" FontWeight="Bold" FontSize="14"/>
+                                    <TextBlock Text="Топ по QualityScore" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,2,0,8"/>
+                                    <ItemsControl ItemsSource="{Binding TopHosts}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#20243C" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="{Binding Country}" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold"/>
+                                                            <TextBlock Text="{Binding Ip}" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                                                        </StackPanel>
+                                                        <Border Grid.Column="1" Background="#2D3150" CornerRadius="6" Padding="8,3">
+                                                            <TextBlock Text="{Binding Score, StringFormat=F2}" Foreground="{StaticResource OkBrush}" FontWeight="Bold"/>
+                                                        </Border>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Margin="0,8,0,0" Text="{Binding RecommendationText}" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" FontSize="11"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Command="{Binding ToggleMonitoringCommand}"/>
+                        <Button Content="Экспорт CSV" Width="140" Command="{Binding ExportCsvCommand}"/>
+                        <Button Content="{Binding ToggleBestOnlyButtonText}" Width="150" Command="{Binding ToggleBestOnlyCommand}"/>
                     </StackPanel>
-                </StackPanel>
-            </DockPanel>
-        </Border>
+                </Grid>
+            </TabItem>
 
-        <!-- ГРАФИКИ -->
-        <Grid Grid.Row="1" Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+            <TabItem Header="Рейтинг хостов">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-            <GroupBox Header="Дрожание (мс)" Grid.Column="0" Margin="0">
-                <sp:WpfPlot x:Name="JitterPlot"/>
-            </GroupBox>
+                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
+                        <DockPanel>
+                            <StackPanel>
+                                <TextBlock Text="Рейтинг хостов" Foreground="{StaticResource TextBrush}" FontWeight="Bold" FontSize="18"/>
+                                <TextBlock Text="Топ узлов по текущему профилю QualityScore" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"/>
+                            </StackPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox Width="150"
+                                          ItemsSource="{Binding ScoringProfiles}"
+                                          SelectedItem="{Binding SelectedScoringProfile}"
+                                          Margin="0,0,12,0"/>
+                                <Button Content="Экспорт топа CSV" Width="150" Command="{Binding ExportTopHostsCsvCommand}"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
 
-            <GroupBox Header="Пинг (мс)" Grid.Column="2" Margin="0">
-                <sp:WpfPlot x:Name="PingPlot"/>
-            </GroupBox>
-        </Grid>
+                    <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-        <GridSplitter Grid.Row="2"
-                      HorizontalAlignment="Stretch"
-                      VerticalAlignment="Center"
-                      Height="6"
-                      Background="{StaticResource PanelSecondaryBrush}"
-                      ResizeDirection="Rows"
-                      ShowsPreview="True"/>
-
-        <!-- RESULTS TABLE -->
-        <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0 0 0 10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <DataGrid ItemsSource="{Binding Results}"
-                          SelectedItem="{Binding SelectedResult}"
-                          AutoGenerateColumns="False"
-                          CanUserAddRows="False">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
-                        <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
-                        <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="0.8*"/>
-                        <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
-                        <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
-                        <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
-                        <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="*"/>
-                        <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="*"/>
-                        <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-
-                <Border Grid.Row="1" Margin="0,8,0,0" Padding="10" Background="#171A2C" CornerRadius="8">
-                    <StackPanel>
-                        <TextBlock Text="Почему этот score?" Foreground="{StaticResource MutedTextBrush}" FontWeight="Bold"/>
-                        <TextBlock Text="{Binding SelectedResult.ScoreDetails, TargetNullValue=Выбери строку в таблице, чтобы увидеть расшифровку оценки.}"
-                                   Foreground="{StaticResource TextBrush}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,4,0,0"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </Border>
-
-        <!-- BUTTONS -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Command="{Binding ToggleMonitoringCommand}"/>
-            <Button Content="Экспорт CSV" Width="140" Command="{Binding ExportCsvCommand}"/>
-            <Button Content="{Binding ToggleBestOnlyButtonText}" Width="150" Command="{Binding ToggleBestOnlyCommand}"/>
-        </StackPanel>
-
+                            <DataGrid ItemsSource="{Binding TopHosts}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="#1D2033"/>
+                                    <Setter Property="FontWeight" Value="Normal"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Rank}" Value="1">
+                                            <Setter Property="Background" Value="#3B2F10"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Rank}" Value="2">
+                                            <Setter Property="Background" Value="#2D3440"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Rank}" Value="3">
+                                            <Setter Property="Background" Value="#3A2A24"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="" Binding="{Binding RankBadge}" Width="0.4*"/>
+                                <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
+                                <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
+                                <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
+                                <DataGridTextColumn Header="Score" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
+                                <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="0.8*" SortMemberPath="Ping"/>
+                                <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="0.8*" SortMemberPath="Jitter"/>
+                                <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
+                                <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="0.8*" SortMemberPath="Download"/>
+                                <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="0.8*" SortMemberPath="Upload"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                            <TextBlock Grid.Row="1"
+                                       Margin="0,8,0,0"
+                                       Text="{Binding RecommendationText}"
+                                       Foreground="{StaticResource MutedTextBrush}"
+                                       TextWrapping="Wrap"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>

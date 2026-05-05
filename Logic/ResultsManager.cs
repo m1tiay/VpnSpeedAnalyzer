@@ -82,6 +82,12 @@ namespace VpnSpeedAnalyzer.Logic
                 .OrderByDescending(r => r.Score)
                 .FirstOrDefault();
 
+        public List<ResultEntry> GetTopResults(int count) =>
+            _allResults
+                .OrderByDescending(r => r.Score)
+                .Take(Math.Max(0, count))
+                .ToList();
+
         public void RecalculateScores(Func<ResultEntry, double> scoreSelector, Func<ResultEntry, string> detailsSelector)
         {
             foreach (var entry in _allResults)

@@ -34,5 +34,11 @@ namespace VpnSpeedAnalyzer.Models
 
         /// <summary>Короткое пояснение, почему получен такой итоговый балл</summary>
         public string ScoreDetails { get; set; } = "";
+
+        /// <summary>Позиция в рейтинге (1 - лучший)</summary>
+        public int Rank { get; set; }
+
+        /// <summary>Медаль для топ-3</summary>
+        public string RankBadge { get; set; } = "";
     }
 }

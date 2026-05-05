@@ -18,6 +18,7 @@ namespace VpnSpeedAnalyzer
         private const string ProfileUniversal = "Универсальный";
         private const string ProfileGaming = "Игры";
         private const string ProfileStreaming = "Стрим";
+        private const int TopHostsCount = 5;
 
         private readonly MonitorController _monitor;
         private readonly ResultsManager _resultsManager;
@@ -36,6 +37,7 @@ namespace VpnSpeedAnalyzer
         public event EventHandler<SpeedtestResult>? NewResultArrived;
 
         public ObservableCollection<ResultEntry> Results { get; } = new();
+        public ObservableCollection<ResultEntry> TopHosts { get; } = new();
         public ObservableCollection<string> ScoringProfiles { get; } = new()
         {
             ProfileUniversal,
@@ -173,6 +175,7 @@ namespace VpnSpeedAnalyzer
         public ICommand StopCommand { get; }
         public ICommand ToggleMonitoringCommand { get; }
         public ICommand ExportCsvCommand { get; }
+        public ICommand ExportTopHostsCsvCommand { get; }
         public ICommand ToggleBestOnlyCommand { get; }
 
         public string ToggleMonitoringButtonText => _isMonitoring ? "Стоп" : "Старт";
@@ -213,6 +216,7 @@ namespace VpnSpeedAnalyzer
                 StopCommand = new RelayCommand(_ => Stop());
                 ToggleMonitoringCommand = new RelayCommand(_ => ToggleMonitoring());
                 ExportCsvCommand = new RelayCommand(_ => ExportCsv());
+                ExportTopHostsCsvCommand = new RelayCommand(_ => ExportTopHostsCsv());
                 ToggleBestOnlyCommand = new RelayCommand(_ => ToggleBestOnly());
                 Logger.Write("ViewModel: Команды ОК");
 
@@ -252,6 +256,7 @@ namespace VpnSpeedAnalyzer
                     _resultsManager.AddResult(entry);
 
                     UpdateRecommendation();
+                    UpdateTopHosts();
                     SelectedResult ??= _resultsManager.GetRecommendedResult();
 
                     StatusText = $"✓ Последняя проверка: {DateTime.Now:HH:mm:ss}";
@@ -272,8 +277,33 @@ namespace VpnSpeedAnalyzer
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                const string errorPrefix = "ERROR:";
+                const string checkingPrefix = "CHECKING:";
+                const string infoPrefix = "INFO:";
+
+                if (message.StartsWith(errorPrefix, StringComparison.Ordinal))
+                {
+                    StatusText = message.Substring(errorPrefix.Length).Trim();
+                    StatusColor = "#FF7AA2";
+                    return;
+                }
+
+                if (message.StartsWith(checkingPrefix, StringComparison.Ordinal))
+                {
+                    StatusText = message.Substring(checkingPrefix.Length).Trim();
+                    StatusColor = "#F6C453";
+                    return;
+                }
+
+                if (message.StartsWith(infoPrefix, StringComparison.Ordinal))
+                {
+                    StatusText = message.Substring(infoPrefix.Length).Trim();
+                    StatusColor = "#A8B0D9";
+                    return;
+                }
+
                 StatusText = message;
-                StatusColor = "#FF7AA2";
+                StatusColor = "#A8B0D9";
             });
         }
 
@@ -335,6 +365,7 @@ namespace VpnSpeedAnalyzer
                 _resultsManager.ToggleBestOnly();
                 NotifyPropertyChanged(nameof(ToggleBestOnlyButtonText));
                 UpdateRecommendation();
+                UpdateTopHosts();
                 Logger.Write("Best results filter applied");
             }
             catch (Exception ex)
@@ -388,6 +419,40 @@ namespace VpnSpeedAnalyzer
             }
         }
 
+        public void ExportTopHostsCsv()
+        {
+            try
+            {
+                if (TopHosts.Count == 0)
+                {
+                    MessageBox.Show("Нет данных рейтинга для экспорта", "Info");
+                    return;
+                }
+
+                string path = $"top_hosts_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+
+                using (var sw = new StreamWriter(path))
+                {
+                    sw.WriteLine("Rank,IP,Country,Ping,Jitter,Loss,Download,Upload,Score");
+
+                    foreach (var r in TopHosts)
+                    {
+                        var ip = EscapeCsvField(r.Ip);
+                        var country = EscapeCsvField(r.Country);
+                        sw.WriteLine($"{r.Rank},{ip},{country},{r.Ping},{r.Jitter},{r.Loss},{r.Download},{r.Upload},{r.Score}");
+                    }
+                }
+
+                Logger.Write($"Top hosts CSV exported to {path}");
+                MessageBox.Show($"CSV saved: {path}", "Success");
+            }
+            catch (Exception ex)
+            {
+                Logger.Write($"ExportTopHostsCsv error: {ex.Message}");
+                MessageBox.Show($"Error exporting top hosts CSV: {ex.Message}", "Error");
+            }
+        }
+
         /// <summary>
         /// Экрранирует часть CSV для защиты от атак injection
         /// </summary>
@@ -421,6 +486,7 @@ namespace VpnSpeedAnalyzer
         {
             _resultsManager.RecalculateScores(CalculateQualityScore, BuildScoreDetails);
             UpdateRecommendation();
+            UpdateTopHosts();
             NotifyPropertyChanged(nameof(SelectedResult));
         }
 
@@ -473,6 +539,24 @@ namespace VpnSpeedAnalyzer
             }
 
             RecommendationText = $"Лучший хост сейчас: {best.Country} ({best.Ip}), score {best.Score}";
+        }
+
+        private void UpdateTopHosts()
+        {
+            TopHosts.Clear();
+            var rank = 1;
+            foreach (var item in _resultsManager.GetTopResults(TopHostsCount))
+            {
+                item.Rank = rank++;
+                item.RankBadge = item.Rank switch
+                {
+                    1 => "🥇",
+                    2 => "🥈",
+                    3 => "🥉",
+                    _ => ""
+                };
+                TopHosts.Add(item);
+            }
         }
 
         private static double ScoreLowerIsBetter(double value, double ideal, double worst)
