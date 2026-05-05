@@ -25,11 +25,6 @@ namespace VpnSpeedAnalyzer
             
             try
             {
-                // КРИТИЧЕСКАЯ ДИАГНОСТИКА - если это сообщение не появилось, 
-                // значит приложение крашится еще раньше, до App()
-                CriticalLog("MessageBox попытка 1");
-                MessageBox.Show("App() конструктор начал выполняться", "Диагностика");
-                
                 CriticalLog("Logger попытка 1");
                 Logger.Write("=== ПРИЛОЖЕНИЕ ЗАПУСКАЕТСЯ ===");
                 
@@ -50,9 +45,6 @@ namespace VpnSpeedAnalyzer
                 
                 CriticalLog("Обработчики исключений установлены успешно");
                 Logger.Write("Обработчики исключений установлены");
-                
-                CriticalLog("MessageBox попытка 2");
-                MessageBox.Show("App() конструктор завершился успешно", "Диагностика");
             }
             catch (Exception ex)
             {

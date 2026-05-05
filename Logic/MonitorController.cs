@@ -57,7 +57,11 @@ namespace VpnSpeedAnalyzer.Logic
                 return;
             }
 
-            _cts.Cancel();
+            var cts = _cts;
+            _cts = null;
+
+            cts.Cancel();
+            cts.Dispose();
         }
 
         /// <summary>

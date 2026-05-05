@@ -13,6 +13,8 @@ namespace VpnSpeedAnalyzer.Logic
         private const int BestResultsCount = 5;
 
         private readonly ObservableCollection<ResultEntry> _results;
+        private bool _isBestOnlyMode;
+        private List<ResultEntry>? _allResultsSnapshot;
 
         public ResultsManager(ObservableCollection<ResultEntry> results)
         {
@@ -32,25 +34,40 @@ namespace VpnSpeedAnalyzer.Logic
                 return;
             }
 
-            var best = _results
-                .OrderBy(r => r.Score)
-                .Take(BestResultsCount)
-                .ToList();
-
-            if (best.Count == _results.Count)
+            if (!_isBestOnlyMode)
             {
-                Logger.Write("Отображаются лучшие результаты");
+                _allResultsSnapshot = _results.ToList();
+                var best = _allResultsSnapshot
+                    .OrderBy(r => r.Score)
+                    .Take(BestResultsCount)
+                    .ToList();
+
+                _results.Clear();
+
+                foreach (var r in best)
+                {
+                    _results.Add(r);
+                }
+
+                _isBestOnlyMode = true;
+                Logger.Write($"Оставлено лучших результатов: {best.Count}");
+                return;
+            }
+
+            if (_allResultsSnapshot == null)
+            {
+                Logger.Write("Снимок всех результатов недоступен, нечего восстанавливать");
                 return;
             }
 
             _results.Clear();
-
-            foreach (var r in best)
+            foreach (var r in _allResultsSnapshot)
             {
                 _results.Add(r);
             }
 
-            Logger.Write($"Оставлено лучших результатов: {best.Count}");
+            _isBestOnlyMode = false;
+            Logger.Write("Восстановлен полный список результатов");
         }
     }
 }
