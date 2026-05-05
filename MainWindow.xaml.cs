@@ -136,8 +136,8 @@ namespace VpnSpeedAnalyzer
                 axisLabel: text,
                 tick: ticks);
 
-            // Уплотняем рабочую область графика, чтобы меньше пустого поля.
-            plot.Layout(left: 28, right: 6, bottom: 8, top: 4);
+            // Сильно уплотняем рабочую область графика, чтобы шкала была ближе к рамке.
+            plot.Layout(left: 14, right: 4, bottom: 4, top: 2);
         }
 
         private void ApplyDarkTitleBar()

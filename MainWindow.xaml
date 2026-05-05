@@ -20,6 +20,8 @@
         <SolidColorBrush x:Key="WaitBrush" Color="#A8B0D9"/>
         <SolidColorBrush x:Key="CheckBrush" Color="#F6C453"/>
         <SolidColorBrush x:Key="ErrorBrush" Color="#FF7AA2"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#232741"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="#F2F4FF"/>
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#232741"/>
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#F2F4FF"/>
         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#9146FF"/>
@@ -100,6 +102,7 @@
             <Setter Property="Padding" Value="4,2"/>
             <Setter Property="MinHeight" Value="28"/>
             <Setter Property="Margin" Value="4,0,0,0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
         <Style TargetType="ComboBoxItem">
@@ -123,16 +126,33 @@
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#2A2F4A"/>
-                    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-                </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#2C3255"/>
-                    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{StaticResource PanelSecondaryBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6,6,0,0"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              ContentSource="Header"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#2A2F4A"/>
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#30365B"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
@@ -150,7 +170,7 @@
 
                     <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0 0 0 10">
                         <DockPanel LastChildFill="True">
-                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
                                 <TextBlock Text="IP:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
                                 <TextBlock Text="{Binding CurrentIp}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
                                 <TextBlock Text="Страна:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
