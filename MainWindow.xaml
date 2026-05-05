@@ -246,6 +246,7 @@
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="Panel.ZIndex" Value="0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
@@ -267,6 +268,7 @@
                                 <Setter TargetName="TabBorder" Property="Background" Value="#2A2F4A"/>
                                 <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
                                 <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                <Setter Property="Panel.ZIndex" Value="10"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="TabBorder" Property="Background" Value="#30365B"/>
