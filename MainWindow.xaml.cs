@@ -232,7 +232,6 @@ namespace VpnSpeedAnalyzer
             {
                 var text = plot.AddText(tags[i], xs[i], ys[i] + 0.02, color: Color.FromArgb(168, 176, 217));
                 text.FontSize = 8;
-                text.Alignment = Alignment.LowerCenter;
                 cache.Add(text);
             }
         }

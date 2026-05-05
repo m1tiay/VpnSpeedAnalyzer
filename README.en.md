@@ -6,18 +6,19 @@ English | [Русский](README.md)
 
 ## TL;DR
 
-Real-time host ranking by ping, jitter, packet loss, download/upload, and `QualityScore (0..100)` with profile presets.
+Real-time host ranking by ping, jitter, packet loss, download/upload, and `D.Q.S (0..100)` with profile presets.
 
 ## Key Features
 
 - **Smart IP detection:** primary source `ipwho.is`, fallback `ipapi.co`.
 - **Reliable measurements:** speedtest retries, error reason logging, and UI status reporting.
-- **Quality scoring:** host score from `0..100` with profile presets:
+- **Quality scoring:** `D.Q.S` from `0..100` with profile presets:
+- **Abbreviation:** `D.Q.S = Daver Quality Score` (author-defined scoring logic).
   - `Universal`
   - `Gaming`
   - `Streaming`
 - **Host rating screen:** top hosts list + best host recommendation.
-- **Explainable score:** "Why this score?" block for selected result.
+- **Explainable D.Q.S:** "Why this D.Q.S?" block for selected result.
 - **Live visualization:** compact ping and jitter charts.
 - **CSV export:** full results export and top-hosts export.
 - **Local logging:** logs stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs` with rotation and cleanup.

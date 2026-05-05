@@ -397,7 +397,7 @@ namespace VpnSpeedAnalyzer
 
                 using (var sw = new StreamWriter(path))
                 {
-                    sw.WriteLine("Timestamp,IP,Country,Ping,Jitter,Loss,Download,Upload,Score");
+                    sw.WriteLine("Timestamp,IP,Country,Ping,Jitter,Loss,Download,Upload,DQS");
 
                     foreach (var r in Results)
                     {
@@ -433,7 +433,7 @@ namespace VpnSpeedAnalyzer
 
                 using (var sw = new StreamWriter(path))
                 {
-                    sw.WriteLine("Rank,IP,Country,Ping,Jitter,Loss,Download,Upload,Score");
+                    sw.WriteLine("Rank,IP,Country,Ping,Jitter,Loss,Download,Upload,DQS");
 
                     foreach (var r in TopHosts)
                     {
@@ -538,7 +538,7 @@ namespace VpnSpeedAnalyzer
                 return;
             }
 
-            RecommendationText = $"Лучший хост сейчас: {best.Country} ({best.Ip}), score {best.Score}";
+            RecommendationText = $"Лучший хост сейчас: {best.Country} ({best.Ip}), D.Q.S {best.Score}";
         }
 
         private void UpdateTopHosts()

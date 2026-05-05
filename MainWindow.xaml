@@ -295,7 +295,7 @@
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
                                     <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
-                                    <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="0.8*"/>
+                                    <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score}" Width="0.8*"/>
                                     <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
                                     <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
                                     <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
@@ -307,7 +307,7 @@
 
                             <Border Grid.Row="1" Grid.Column="0" Margin="0,8,0,0" Padding="10" Background="#171A2C" CornerRadius="8">
                                 <StackPanel>
-                                    <TextBlock Text="Почему этот score?" Foreground="{StaticResource MutedTextBrush}" FontWeight="Bold"/>
+                                    <TextBlock Text="Почему этот D.Q.S?" Foreground="{StaticResource MutedTextBrush}" FontWeight="Bold"/>
                                     <TextBlock Text="{Binding SelectedResult.ScoreDetails, TargetNullValue='Выбери строку в таблице, чтобы увидеть расшифровку оценки.'}"
                                                Foreground="{StaticResource TextBrush}"
                                                TextWrapping="Wrap"
@@ -318,7 +318,8 @@
                             <Border Grid.Column="2" Grid.RowSpan="2" Background="#171A2C" CornerRadius="8" Padding="10">
                                 <StackPanel>
                                     <TextBlock Text="Рейтинг хостов" Foreground="{StaticResource TextBrush}" FontWeight="Bold" FontSize="14"/>
-                                    <TextBlock Text="Топ по QualityScore" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,2,0,8"/>
+                                    <TextBlock Text="Топ по D.Q.S" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,2,0,8"/>
+                                    <TextBlock Text="D.Q.S = Daver Quality Score" Foreground="{StaticResource MutedTextBrush}" FontSize="10" Margin="0,0,0,8"/>
                                     <ItemsControl ItemsSource="{Binding TopHosts}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -365,7 +366,7 @@
                         <DockPanel>
                             <StackPanel>
                                 <TextBlock Text="Рейтинг хостов" Foreground="{StaticResource TextBrush}" FontWeight="Bold" FontSize="18"/>
-                                <TextBlock Text="Топ узлов по текущему профилю QualityScore" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"/>
+                                <TextBlock Text="Топ узлов по текущему профилю D.Q.S" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"/>
                             </StackPanel>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="16,0,8,0"/>
@@ -421,7 +422,7 @@
                                 <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
                                 <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
                                 <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
-                                <DataGridTextColumn Header="Score" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
+                                <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
                                 <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="0.8*" SortMemberPath="Ping"/>
                                 <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="0.8*" SortMemberPath="Jitter"/>
                                 <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
