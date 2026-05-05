@@ -96,7 +96,7 @@
         </Style>
 
         <Style TargetType="ComboBox">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Foreground" Value="#1D2033"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
             <Setter Property="Padding" Value="4,2"/>
@@ -125,8 +125,9 @@
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Margin" Value="0,0,2,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
@@ -135,6 +136,7 @@
                                 BorderBrush="{StaticResource PanelSecondaryBrush}"
                                 BorderThickness="1"
                                 CornerRadius="6,6,0,0"
+                                Margin="0,0,1,0"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"
@@ -243,7 +245,7 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock Text="Дрожание (мс)" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" Margin="2,0,0,4"/>
-                                <sp:WpfPlot x:Name="JitterPlot" Grid.Row="1"/>
+                                <sp:WpfPlot x:Name="JitterPlot" Grid.Row="1" Margin="-6,-2,-6,-6"/>
                             </Grid>
                         </Border>
                         <Border Grid.Column="2" Margin="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" CornerRadius="8" Padding="4">
@@ -253,7 +255,7 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock Text="Пинг (мс)" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" Margin="2,0,0,4"/>
-                                <sp:WpfPlot x:Name="PingPlot" Grid.Row="1"/>
+                                <sp:WpfPlot x:Name="PingPlot" Grid.Row="1" Margin="-6,-2,-6,-6"/>
                             </Grid>
                         </Border>
                     </Grid>
