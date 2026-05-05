@@ -87,14 +87,22 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
         </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="12" Background="{StaticResource BgBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="2*"/>
-            <RowDefinition Height="2*"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="1.25*"/>
+            <RowDefinition Height="6"/>
+            <RowDefinition Height="2.1*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -110,10 +118,16 @@
 
                     <TextBlock Text="ASN:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
                     <TextBlock Text="{Binding CurrentAsn}" Margin="0 0 16 0" Foreground="{StaticResource TextBrush}"/>
+
+                    <TextBlock Text="Профиль:" FontWeight="Bold" Margin="0 0 8 0" Foreground="{StaticResource MutedTextBrush}"/>
+                    <ComboBox Width="150"
+                              ItemsSource="{Binding ScoringProfiles}"
+                              SelectedItem="{Binding SelectedScoringProfile}"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
                     <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
+                    <TextBlock Text="{Binding RecommendationText}" HorizontalAlignment="Right" Margin="0,4,0,0" Foreground="{StaticResource TextBrush}" FontSize="11"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
                         <Ellipse Width="8" Height="8" Fill="{StaticResource OkBrush}" Margin="0,0,4,0"/>
                         <TextBlock Text="ОК" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
@@ -126,32 +140,66 @@
             </DockPanel>
         </Border>
 
-        <!-- JITTER PLOT -->
-        <GroupBox Header="Дрожание (мс)" Grid.Row="1">
-            <sp:WpfPlot x:Name="JitterPlot"/>
-        </GroupBox>
+        <!-- ГРАФИКИ -->
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-        <!-- PING PLOT -->
-        <GroupBox Header="Пинг (мс)" Grid.Row="2">
-            <sp:WpfPlot x:Name="PingPlot"/>
-        </GroupBox>
+            <GroupBox Header="Дрожание (мс)" Grid.Column="0" Margin="0">
+                <sp:WpfPlot x:Name="JitterPlot"/>
+            </GroupBox>
+
+            <GroupBox Header="Пинг (мс)" Grid.Column="2" Margin="0">
+                <sp:WpfPlot x:Name="PingPlot"/>
+            </GroupBox>
+        </Grid>
+
+        <GridSplitter Grid.Row="2"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Center"
+                      Height="6"
+                      Background="{StaticResource PanelSecondaryBrush}"
+                      ResizeDirection="Rows"
+                      ShowsPreview="True"/>
 
         <!-- RESULTS TABLE -->
         <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0 0 0 10">
-            <DataGrid ItemsSource="{Binding Results}"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
-                    <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
-                    <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
-                    <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
-                    <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
-                    <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="*"/>
-                    <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="*"/>
-                    <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
-                </DataGrid.Columns>
-            </DataGrid>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <DataGrid ItemsSource="{Binding Results}"
+                          SelectedItem="{Binding SelectedResult}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
+                        <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
+                        <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="0.8*"/>
+                        <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
+                        <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
+                        <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
+                        <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="*"/>
+                        <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="*"/>
+                        <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <Border Grid.Row="1" Margin="0,8,0,0" Padding="10" Background="#171A2C" CornerRadius="8">
+                    <StackPanel>
+                        <TextBlock Text="Почему этот score?" Foreground="{StaticResource MutedTextBrush}" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding SelectedResult.ScoreDetails, TargetNullValue=Выбери строку в таблице, чтобы увидеть расшифровку оценки.}"
+                                   Foreground="{StaticResource TextBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Border>
 
         <!-- BUTTONS -->

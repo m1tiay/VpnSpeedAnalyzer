@@ -66,9 +66,36 @@ namespace VpnSpeedAnalyzer.Logic
             Logger.Write("Восстановлен полный список результатов");
         }
 
+        public void RefreshVisibleResults()
+        {
+            if (_isBestOnlyMode)
+            {
+                RebuildVisibleResults(GetBestResults());
+                return;
+            }
+
+            RebuildVisibleResults(_allResults);
+        }
+
+        public ResultEntry? GetRecommendedResult() =>
+            _allResults
+                .OrderByDescending(r => r.Score)
+                .FirstOrDefault();
+
+        public void RecalculateScores(Func<ResultEntry, double> scoreSelector, Func<ResultEntry, string> detailsSelector)
+        {
+            foreach (var entry in _allResults)
+            {
+                entry.Score = scoreSelector(entry);
+                entry.ScoreDetails = detailsSelector(entry);
+            }
+
+            RefreshVisibleResults();
+        }
+
         private List<ResultEntry> GetBestResults() =>
             _allResults
-                .OrderBy(r => r.Score)
+                .OrderByDescending(r => r.Score)
                 .Take(BestResultsCount)
                 .ToList();
 

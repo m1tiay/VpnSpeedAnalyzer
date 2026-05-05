@@ -29,7 +29,10 @@ namespace VpnSpeedAnalyzer.Models
         /// <summary>Скорость загружки в Мбит/с</summary>
         public double Upload { get; set; }
 
-        /// <summary>Оценка = Ping + Jitter + Loss (меньше - лучше)</summary>
-        public double Score => Ping + Jitter + Loss;
+        /// <summary>Итоговая оценка качества хоста по шкале 0..100 (больше - лучше)</summary>
+        public double Score { get; set; }
+
+        /// <summary>Короткое пояснение, почему получен такой итоговый балл</summary>
+        public string ScoreDetails { get; set; } = "";
     }
 }

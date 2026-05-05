@@ -15,6 +15,10 @@ namespace VpnSpeedAnalyzer
     /// </summary>
     public class MainViewModel : INotifyPropertyChanged
     {
+        private const string ProfileUniversal = "Универсальный";
+        private const string ProfileGaming = "Игры";
+        private const string ProfileStreaming = "Стрим";
+
         private readonly MonitorController _monitor;
         private readonly ResultsManager _resultsManager;
 
@@ -23,12 +27,21 @@ namespace VpnSpeedAnalyzer
         private string _currentAsn = "";
         private string _statusText = "Остановлено";
         private string _statusColor = "#A8B0D9";
+        private string _selectedScoringProfile = ProfileUniversal;
+        private string _recommendationText = "Рекомендация появится после первого успешного замера";
+        private ResultEntry? _selectedResult;
         private bool _isMonitoring;
 
         public event PropertyChangedEventHandler? PropertyChanged;
         public event EventHandler<SpeedtestResult>? NewResultArrived;
 
         public ObservableCollection<ResultEntry> Results { get; } = new();
+        public ObservableCollection<string> ScoringProfiles { get; } = new()
+        {
+            ProfileUniversal,
+            ProfileGaming,
+            ProfileStreaming
+        };
 
         public string CurrentIp
         {
@@ -107,6 +120,55 @@ namespace VpnSpeedAnalyzer
             }
         }
 
+        /// <summary>
+        /// Активный профиль оценки качества хоста
+        /// </summary>
+        public string SelectedScoringProfile
+        {
+            get => _selectedScoringProfile;
+            set
+            {
+                if (_selectedScoringProfile != value)
+                {
+                    _selectedScoringProfile = value;
+                    RecalculateScores();
+                    NotifyPropertyChanged(nameof(SelectedScoringProfile));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Краткая рекомендация по лучшему доступному хосту
+        /// </summary>
+        public string RecommendationText
+        {
+            get => _recommendationText;
+            set
+            {
+                if (_recommendationText != value)
+                {
+                    _recommendationText = value;
+                    NotifyPropertyChanged(nameof(RecommendationText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Выбранная запись в таблице результатов
+        /// </summary>
+        public ResultEntry? SelectedResult
+        {
+            get => _selectedResult;
+            set
+            {
+                if (_selectedResult != value)
+                {
+                    _selectedResult = value;
+                    NotifyPropertyChanged(nameof(SelectedResult));
+                }
+            }
+        }
+
         public ICommand StartCommand { get; }
         public ICommand StopCommand { get; }
         public ICommand ToggleMonitoringCommand { get; }
@@ -173,7 +235,7 @@ namespace VpnSpeedAnalyzer
                     CurrentCountry = r.Country;
                     CurrentAsn = string.IsNullOrWhiteSpace(r.Asn) ? "N/A" : r.Asn;
 
-                    _resultsManager.AddResult(new ResultEntry
+                    var entry = new ResultEntry
                     {
                         Ip = r.Ip,
                         Country = r.Country,
@@ -183,7 +245,14 @@ namespace VpnSpeedAnalyzer
                         Loss = Math.Round(r.Loss, 2),
                         Download = Math.Round(r.Download, 2),
                         Upload = Math.Round(r.Upload, 2)
-                    });
+                    };
+                    entry.Score = CalculateQualityScore(entry);
+                    entry.ScoreDetails = BuildScoreDetails(entry);
+
+                    _resultsManager.AddResult(entry);
+
+                    UpdateRecommendation();
+                    SelectedResult ??= _resultsManager.GetRecommendedResult();
 
                     StatusText = $"✓ Последняя проверка: {DateTime.Now:HH:mm:ss}";
                     StatusColor = "#59D9B7";
@@ -265,6 +334,7 @@ namespace VpnSpeedAnalyzer
             {
                 _resultsManager.ToggleBestOnly();
                 NotifyPropertyChanged(nameof(ToggleBestOnlyButtonText));
+                UpdateRecommendation();
                 Logger.Write("Best results filter applied");
             }
             catch (Exception ex)
@@ -296,7 +366,7 @@ namespace VpnSpeedAnalyzer
 
                 using (var sw = new StreamWriter(path))
                 {
-                    sw.WriteLine("Timestamp,IP,Country,Ping,Jitter,Loss,Download,Upload");
+                    sw.WriteLine("Timestamp,IP,Country,Ping,Jitter,Loss,Download,Upload,Score");
 
                     foreach (var r in Results)
                     {
@@ -304,7 +374,7 @@ namespace VpnSpeedAnalyzer
                         var ip = EscapeCsvField(r.Ip);
                         var country = EscapeCsvField(r.Country);
 
-                        sw.WriteLine($"{timestamp},{ip},{country},{r.Ping},{r.Jitter},{r.Loss},{r.Download},{r.Upload}");
+                        sw.WriteLine($"{timestamp},{ip},{country},{r.Ping},{r.Jitter},{r.Loss},{r.Download},{r.Upload},{r.Score}");
                     }
                 }
 
@@ -345,6 +415,82 @@ namespace VpnSpeedAnalyzer
             }
 
             return field;
+        }
+
+        private void RecalculateScores()
+        {
+            _resultsManager.RecalculateScores(CalculateQualityScore, BuildScoreDetails);
+            UpdateRecommendation();
+            NotifyPropertyChanged(nameof(SelectedResult));
+        }
+
+        /// <summary>
+        /// Рассчитывает качество хоста по шкале 0..100.
+        /// Чем ниже ping/jitter/loss и выше скорости, тем выше итоговый балл.
+        /// </summary>
+        private double CalculateQualityScore(ResultEntry result)
+        {
+            var pingScore = ScoreLowerIsBetter(result.Ping, ideal: 20, worst: 150);
+            var jitterScore = ScoreLowerIsBetter(result.Jitter, ideal: 2, worst: 40);
+            var lossScore = ScoreLowerIsBetter(result.Loss, ideal: 0, worst: 5);
+            var downloadScore = ScoreHigherIsBetter(result.Download, ideal: 400, worst: 20);
+            var uploadScore = ScoreHigherIsBetter(result.Upload, ideal: 150, worst: 10);
+
+            var (pingWeight, jitterWeight, lossWeight, downloadWeight, uploadWeight) = GetProfileWeights();
+
+            var score =
+                pingScore * pingWeight +
+                jitterScore * jitterWeight +
+                lossScore * lossWeight +
+                downloadScore * downloadWeight +
+                uploadScore * uploadWeight;
+
+            return Math.Round(score, 2);
+        }
+
+        private string BuildScoreDetails(ResultEntry result)
+        {
+            return $"{SelectedScoringProfile}: ping {Math.Round(result.Ping, 2)} мс, дрожание {Math.Round(result.Jitter, 2)} мс, потери {Math.Round(result.Loss, 2)}%, загрузка {Math.Round(result.Download, 2)} Мбит/с, отдача {Math.Round(result.Upload, 2)} Мбит/с";
+        }
+
+        private (double ping, double jitter, double loss, double download, double upload) GetProfileWeights()
+        {
+            return SelectedScoringProfile switch
+            {
+                ProfileGaming => (0.42, 0.28, 0.20, 0.06, 0.04),
+                ProfileStreaming => (0.20, 0.10, 0.15, 0.35, 0.20),
+                _ => (0.30, 0.20, 0.25, 0.15, 0.10)
+            };
+        }
+
+        private void UpdateRecommendation()
+        {
+            var best = _resultsManager.GetRecommendedResult();
+            if (best == null)
+            {
+                RecommendationText = "Рекомендация появится после первого успешного замера";
+                return;
+            }
+
+            RecommendationText = $"Лучший хост сейчас: {best.Country} ({best.Ip}), score {best.Score}";
+        }
+
+        private static double ScoreLowerIsBetter(double value, double ideal, double worst)
+        {
+            if (value <= ideal) return 100;
+            if (value >= worst) return 0;
+
+            var ratio = (value - ideal) / (worst - ideal);
+            return Math.Round((1 - ratio) * 100, 2);
+        }
+
+        private static double ScoreHigherIsBetter(double value, double ideal, double worst)
+        {
+            if (value >= ideal) return 100;
+            if (value <= worst) return 0;
+
+            var ratio = (value - worst) / (ideal - worst);
+            return Math.Round(ratio * 100, 2);
         }
 
         private void NotifyPropertyChanged(string propertyName) =>
