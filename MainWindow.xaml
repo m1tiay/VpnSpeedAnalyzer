@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="VPN Speed Analyzer"
         Width="1100" Height="700"
+        MinWidth="980" MinHeight="620"
         WindowStartupLocation="CenterScreen"
         Background="#141622">
     <Window.Resources>
@@ -22,6 +23,9 @@
         <SolidColorBrush x:Key="ErrorBrush" Color="#FF7AA2"/>
         <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#232741"/>
         <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="#F2F4FF"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.ControlLightBrushKey}" Color="#232741"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.ControlLightLightBrushKey}" Color="#232741"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.GrayTextBrushKey}" Color="#F2F4FF"/>
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#232741"/>
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#F2F4FF"/>
         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#9146FF"/>
@@ -125,7 +129,7 @@
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="0,0,2,0"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
@@ -136,7 +140,7 @@
                                 BorderBrush="{StaticResource PanelSecondaryBrush}"
                                 BorderThickness="1"
                                 CornerRadius="6,6,0,0"
-                                Margin="0,0,1,0"
+                                Margin="0"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"
@@ -238,24 +242,26 @@
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Margin="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" CornerRadius="8" Padding="4">
+                        <Border Grid.Column="0" Margin="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" CornerRadius="8" Padding="0">
                             <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Text="Дрожание (мс)" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" Margin="2,0,0,4"/>
-                                <sp:WpfPlot x:Name="JitterPlot" Grid.Row="1" Margin="-6,-2,-6,-6"/>
+                                <sp:WpfPlot x:Name="JitterPlot" Margin="-8,-6,-8,-8"/>
+                                <TextBlock Text="Дрожание (мс)"
+                                           Foreground="{StaticResource TextBrush}"
+                                           FontWeight="SemiBold"
+                                           Margin="10,8,0,0"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Top"/>
                             </Grid>
                         </Border>
-                        <Border Grid.Column="2" Margin="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" CornerRadius="8" Padding="4">
+                        <Border Grid.Column="2" Margin="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" CornerRadius="8" Padding="0">
                             <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Text="Пинг (мс)" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" Margin="2,0,0,4"/>
-                                <sp:WpfPlot x:Name="PingPlot" Grid.Row="1" Margin="-6,-2,-6,-6"/>
+                                <sp:WpfPlot x:Name="PingPlot" Margin="-8,-6,-8,-8"/>
+                                <TextBlock Text="Пинг (мс)"
+                                           Foreground="{StaticResource TextBrush}"
+                                           FontWeight="SemiBold"
+                                           Margin="10,8,0,0"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Top"/>
                             </Grid>
                         </Border>
                     </Grid>
@@ -266,7 +272,7 @@
                                   Height="6"
                                   Background="{StaticResource PanelSecondaryBrush}"
                                   ResizeDirection="Rows"
-                                  ShowsPreview="True"/>
+                                  ShowsPreview="False"/>
 
                     <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0,8,0,10">
                         <Grid>
