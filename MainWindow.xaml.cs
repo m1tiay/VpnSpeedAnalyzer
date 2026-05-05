@@ -82,8 +82,8 @@ namespace VpnSpeedAnalyzer
         {
             try
             {
-                ApplyPlotTheme(JitterPlot);
-                ApplyPlotTheme(PingPlot);
+                ApplyPlotTheme(JitterPlot.Plot);
+                ApplyPlotTheme(PingPlot.Plot);
 
                 // Создаём пустые графики
                 _jitterPlot = JitterPlot.Plot.AddScatter(
@@ -118,7 +118,7 @@ namespace VpnSpeedAnalyzer
         /// <summary>
         /// Единая визуальная тема графиков в стиле приложения
         /// </summary>
-        private static void ApplyPlotTheme(ScottPlot.WPF.WpfPlot plotControl)
+        private static void ApplyPlotTheme(ScottPlot.Plot plot)
         {
             var figureBg = Color.FromArgb(29, 32, 51);
             var dataBg = Color.FromArgb(35, 39, 65);
@@ -126,7 +126,7 @@ namespace VpnSpeedAnalyzer
             var text = Color.FromArgb(242, 244, 255);
             var ticks = Color.FromArgb(168, 176, 217);
 
-            plotControl.Plot.Style(
+            plot.Style(
                 figureBackground: figureBg,
                 dataBackground: dataBg,
                 grid: grid,
