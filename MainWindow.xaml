@@ -134,6 +134,7 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="ToolTip" Value="{Binding SelectedScoringProfileDescription}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
@@ -152,9 +153,10 @@
                                                       Margin="10,0,6,0"
                                                       VerticalAlignment="Center"
                                                       HorizontalAlignment="Left"
+                                                      IsHitTestVisible="False"
                                                       Content="{TemplateBinding SelectionBoxItem}"
                                                       ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"/>
-                                    <ToggleButton Grid.Column="1"
+                                    <ToggleButton Grid.ColumnSpan="2"
                                                   x:Name="DropDownToggle"
                                                   Focusable="False"
                                                   IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
@@ -182,8 +184,9 @@
                                         </ToggleButton.Template>
                                         <Path Width="10"
                                               Height="6"
-                                              HorizontalAlignment="Center"
+                                              HorizontalAlignment="Right"
                                               VerticalAlignment="Center"
+                                              Margin="0,0,10,0"
                                               Fill="{StaticResource TextBrush}"
                                               Data="M 0 0 L 10 0 L 5 6 Z"/>
                                     </ToggleButton>
@@ -230,6 +233,7 @@
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="ToolTipService.ShowDuration" Value="120000"/>
             <Style.Triggers>
                 <Trigger Property="IsHighlighted" Value="True">
                     <Setter Property="Background" Value="#2F3458"/>
@@ -237,6 +241,15 @@
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
                     <Setter Property="Foreground" Value="#FFFFFF"/>
+                </Trigger>
+                <Trigger Property="Content" Value="Универсальный">
+                    <Setter Property="ToolTip" Value="Сбалансированный профиль: задержка, стабильность и скорость учитываются равномерно."/>
+                </Trigger>
+                <Trigger Property="Content" Value="Игры">
+                    <Setter Property="ToolTip" Value="Профиль для игр: основной упор на минимальный пинг, дрожание и потери."/>
+                </Trigger>
+                <Trigger Property="Content" Value="Стрим">
+                    <Setter Property="ToolTip" Value="Профиль для стрима: выше приоритет скоростей загрузки и отдачи при приемлемой задержке."/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -326,7 +339,7 @@
                                 <TextBlock Grid.Column="5" Text="{Binding CurrentAsn}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="6" Text="Профиль:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
                                 <ComboBox Grid.Column="7"
-                                          Width="120"
+                                          Width="150"
                                           Height="28"
                                           Margin="0"
                                           VerticalAlignment="Center"
@@ -464,7 +477,7 @@
                             </StackPanel>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                                <ComboBox Width="118" Height="28"
+                                <ComboBox Width="150" Height="28"
                                           ItemsSource="{Binding ScoringProfiles}"
                                           SelectedItem="{Binding SelectedScoringProfile}"
                                           Margin="0,0,12,0"/>

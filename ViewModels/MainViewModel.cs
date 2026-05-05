@@ -135,9 +135,15 @@ namespace VpnSpeedAnalyzer
                     _selectedScoringProfile = value;
                     RecalculateScores();
                     NotifyPropertyChanged(nameof(SelectedScoringProfile));
+                    NotifyPropertyChanged(nameof(SelectedScoringProfileDescription));
                 }
             }
         }
+
+        /// <summary>
+        /// Описание активного профиля D.Q.S для подсказок в UI.
+        /// </summary>
+        public string SelectedScoringProfileDescription => GetProfileDescription(_selectedScoringProfile);
 
         /// <summary>
         /// Краткая рекомендация по лучшему доступному хосту
@@ -526,6 +532,16 @@ namespace VpnSpeedAnalyzer
                 ProfileGaming => (0.42, 0.28, 0.20, 0.06, 0.04),
                 ProfileStreaming => (0.20, 0.10, 0.15, 0.35, 0.20),
                 _ => (0.30, 0.20, 0.25, 0.15, 0.10)
+            };
+        }
+
+        private static string GetProfileDescription(string profileName)
+        {
+            return profileName switch
+            {
+                ProfileGaming => "Игры: максимальный приоритет низкому пингу, дрожанию и потерям. Скорости учитываются меньше.",
+                ProfileStreaming => "Стрим: повышенный вес загрузки и отдачи при сохранении умеренных требований к задержке.",
+                _ => "Универсальный: сбалансированный профиль для общего использования интернета и VPN."
             };
         }
 
