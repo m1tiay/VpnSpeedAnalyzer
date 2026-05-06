@@ -6,8 +6,8 @@
         xmlns:sp="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         Title="VPN Speed Analyzer"
-        Width="1100" Height="700"
-        MinWidth="980" MinHeight="620"
+        Width="1180" Height="760"
+        MinWidth="1024" MinHeight="720"
         WindowStartupLocation="CenterScreen"
         Icon="Assets/icon.ico"
         Background="#141622">
@@ -762,6 +762,7 @@
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
                 <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Margin="0,0,8,0" Command="{Binding ToggleMonitoringCommand}"/>
+                <Button Content="Замер сейчас" Width="140" Margin="0,0,8,0" Command="{Binding RunNowCommand}"/>
                 <Button Content="{Binding ActiveExportButtonText}" Width="150" Margin="0" Command="{Binding ActiveExportCommand}"/>
             </StackPanel>
 

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Win32;
 using VpnSpeedAnalyzer.Logic;
 using VpnSpeedAnalyzer.Models;
 using VpnSpeedAnalyzer.Services;
@@ -19,20 +20,18 @@ namespace VpnSpeedAnalyzer
     /// </summary>
     public class MainViewModel : INotifyPropertyChanged
     {
-        private const string ProfileUniversal = "Универсальный";
-        private const string ProfileGaming = "Игры";
-        private const string ProfileStreaming = "Стрим";
         private const int TopHostsCount = 3;
 
         private readonly MonitorController _monitor;
         private readonly ResultsManager _resultsManager;
+        private readonly ScoringService _scoring = new();
 
         private string _currentIp = "";
         private string _currentCountry = "";
         private string _currentAsn = "";
         private string _statusText = "Остановлено";
         private string _statusColor = "#A8B0D9";
-        private string _selectedScoringProfile = ProfileUniversal;
+        private string _selectedScoringProfile = ScoringService.ProfileUniversal;
         private string _recommendationText = "Рекомендация появится после первого успешного замера";
         private string _ratingSummaryText = "Недостаточно данных для аналитики";
         private string _stabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
@@ -49,12 +48,7 @@ namespace VpnSpeedAnalyzer
         public ObservableCollection<ResultEntry> Results { get; } = new();
         public ObservableCollection<ResultEntry> TopHosts { get; } = new();
         public ObservableCollection<HostRatingRow> HostRatings { get; } = new();
-        public ObservableCollection<string> ScoringProfiles { get; } = new()
-        {
-            ProfileUniversal,
-            ProfileGaming,
-            ProfileStreaming
-        };
+        public IReadOnlyList<string> ScoringProfiles => _scoring.AvailableProfiles;
 
         public double ScoringProfileComboWidth
         {
@@ -177,6 +171,7 @@ namespace VpnSpeedAnalyzer
                 if (_selectedScoringProfile != value)
                 {
                     _selectedScoringProfile = value;
+                    _scoring.ActiveProfile = value;
                     RecalculateScores();
                     NotifyPropertyChanged(nameof(SelectedScoringProfile));
                     NotifyPropertyChanged(nameof(SelectedScoringProfileDescription));
@@ -187,7 +182,7 @@ namespace VpnSpeedAnalyzer
         /// <summary>
         /// Описание активного профиля D.Q.S для подсказок в UI.
         /// </summary>
-        public string SelectedScoringProfileDescription => GetProfileDescription(_selectedScoringProfile);
+        public string SelectedScoringProfileDescription => _scoring.Describe();
 
         /// <summary>
         /// Краткая рекомендация по лучшему доступному хосту
@@ -281,6 +276,7 @@ namespace VpnSpeedAnalyzer
         public ICommand ExportTopHostsCsvCommand { get; }
         public ICommand ShowMonitoringTabCommand { get; }
         public ICommand ShowAnalyticsTabCommand { get; }
+        public RelayCommand RunNowCommand { get; }
 
         public string ToggleMonitoringButtonText => _isMonitoring ? "Стоп" : "Старт";
         public int SelectedMainTabIndex
@@ -345,6 +341,7 @@ namespace VpnSpeedAnalyzer
                 ExportTopHostsCsvCommand = new RelayCommand(_ => ExportTopHostsCsv());
                 ShowMonitoringTabCommand = new RelayCommand(_ => SelectedMainTabIndex = 0);
                 ShowAnalyticsTabCommand = new RelayCommand(_ => SelectedMainTabIndex = 1);
+                RunNowCommand = new RelayCommand(_ => RunNow(), _ => _isMonitoring);
                 Logger.Write("ViewModel: Команды ОК");
 
                 Logger.Write("Основная Виев-Модель инициализирована");
@@ -377,8 +374,8 @@ namespace VpnSpeedAnalyzer
                         Download = Math.Round(r.Download, 2),
                         Upload = Math.Round(r.Upload, 2)
                     };
-                    entry.Score = CalculateQualityScore(entry);
-                    entry.ScoreDetails = BuildScoreDetails(entry);
+                    entry.Score = _scoring.Calculate(entry);
+                    entry.ScoreDetails = _scoring.BuildDetails(entry);
 
                     _resultsManager.AddResult(entry);
 
@@ -458,6 +455,7 @@ namespace VpnSpeedAnalyzer
                 StatusColor = "#59D9B7";
                 _monitor.Start();
                 NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
+                RunNowCommand.RaiseCanExecuteChanged();
                 Logger.Write("Monitoring started");
             }
             catch (Exception ex)
@@ -484,6 +482,7 @@ namespace VpnSpeedAnalyzer
                 StatusColor = "#A8B0D9";
                 _monitor.Stop();
                 NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
+                RunNowCommand.RaiseCanExecuteChanged();
                 Logger.Write("Monitoring stopped");
             }
             catch (Exception ex)
@@ -502,18 +501,33 @@ namespace VpnSpeedAnalyzer
                 Start();
         }
 
+        /// <summary>
+        /// Просит контроллер сделать внеплановый замер прямо сейчас.
+        /// </summary>
+        public void RunNow()
+        {
+            if (!_isMonitoring)
+                return;
+
+            _monitor.RequestImmediateRun();
+            StatusText = "Запрошен внеплановый замер";
+            StatusColor = "#F6C453";
+        }
+
         public void ExportCsv()
         {
+            if (Results.Count == 0)
+            {
+                MessageBox.Show("Пока нет данных для экспорта.", "Экспорт");
+                return;
+            }
+
+            var path = AskCsvPath($"results_{DateTime.Now:yyyyMMdd_HHmmss}.csv", "Сохранить общий CSV");
+            if (path == null)
+                return;
+
             try
             {
-                if (Results.Count == 0)
-                {
-                    MessageBox.Show("No results to export", "Info");
-                    return;
-                }
-
-                string path = $"results_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-
                 using (var sw = new StreamWriter(path))
                 {
                     sw.WriteLine("Timestamp,IP,Country,Ping,Jitter,Loss,Download,Upload,DQS");
@@ -528,28 +542,30 @@ namespace VpnSpeedAnalyzer
                     }
                 }
 
-                Logger.Write($"CSV exported to {path}");
-                MessageBox.Show($"CSV saved: {path}", "Success");
+                Logger.Write($"CSV экспортирован: {path}");
+                MessageBox.Show($"CSV сохранён:\n{path}", "Экспорт");
             }
             catch (Exception ex)
             {
                 Logger.Write($"ExportCsv error: {ex.Message}");
-                MessageBox.Show($"Error exporting CSV: {ex.Message}", "Error");
+                MessageBox.Show($"Не удалось сохранить CSV: {ex.Message}", "Ошибка экспорта");
             }
         }
 
         public void ExportTopHostsCsv()
         {
+            if (TopHosts.Count == 0)
+            {
+                MessageBox.Show("Пока нет данных рейтинга для экспорта.", "Экспорт");
+                return;
+            }
+
+            var path = AskCsvPath($"top_hosts_{DateTime.Now:yyyyMMdd_HHmmss}.csv", "Сохранить рейтинг хостов");
+            if (path == null)
+                return;
+
             try
             {
-                if (TopHosts.Count == 0)
-                {
-                    MessageBox.Show("Нет данных рейтинга для экспорта", "Info");
-                    return;
-                }
-
-                string path = $"top_hosts_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-
                 using (var sw = new StreamWriter(path))
                 {
                     sw.WriteLine("Rank,IP,Country,Ping,Jitter,Loss,Download,Upload,DQS");
@@ -562,14 +578,33 @@ namespace VpnSpeedAnalyzer
                     }
                 }
 
-                Logger.Write($"Top hosts CSV exported to {path}");
-                MessageBox.Show($"CSV saved: {path}", "Success");
+                Logger.Write($"Top hosts CSV экспортирован: {path}");
+                MessageBox.Show($"CSV сохранён:\n{path}", "Экспорт");
             }
             catch (Exception ex)
             {
                 Logger.Write($"ExportTopHostsCsv error: {ex.Message}");
-                MessageBox.Show($"Error exporting top hosts CSV: {ex.Message}", "Error");
+                MessageBox.Show($"Не удалось сохранить CSV: {ex.Message}", "Ошибка экспорта");
             }
+        }
+
+        /// <summary>
+        /// Открывает SaveFileDialog для выбора места сохранения CSV-файла.
+        /// </summary>
+        private static string? AskCsvPath(string defaultFileName, string title)
+        {
+            var dlg = new SaveFileDialog
+            {
+                Title = title,
+                FileName = defaultFileName,
+                DefaultExt = ".csv",
+                Filter = "CSV файлы (*.csv)|*.csv|Все файлы (*.*)|*.*",
+                AddExtension = true,
+                OverwritePrompt = true,
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+            };
+
+            return dlg.ShowDialog() == true ? dlg.FileName : null;
         }
 
         /// <summary>
@@ -603,60 +638,11 @@ namespace VpnSpeedAnalyzer
 
         private void RecalculateScores()
         {
-            _resultsManager.RecalculateScores(CalculateQualityScore, BuildScoreDetails);
+            _resultsManager.RecalculateScores(_scoring.Calculate, _scoring.BuildDetails);
             UpdateRecommendation();
             UpdateTopHosts();
             UpdateHostAnalytics();
             NotifyPropertyChanged(nameof(SelectedResult));
-        }
-
-        /// <summary>
-        /// Рассчитывает качество хоста по шкале 0..100.
-        /// Чем ниже ping/jitter/loss и выше скорости, тем выше итоговый балл.
-        /// </summary>
-        private double CalculateQualityScore(ResultEntry result)
-        {
-            var pingScore = ScoreLowerIsBetter(result.Ping, ideal: 20, worst: 150);
-            var jitterScore = ScoreLowerIsBetter(result.Jitter, ideal: 2, worst: 40);
-            var lossScore = ScoreLowerIsBetter(result.Loss, ideal: 0, worst: 5);
-            var downloadScore = ScoreHigherIsBetter(result.Download, ideal: 400, worst: 20);
-            var uploadScore = ScoreHigherIsBetter(result.Upload, ideal: 150, worst: 10);
-
-            var (pingWeight, jitterWeight, lossWeight, downloadWeight, uploadWeight) = GetProfileWeights();
-
-            var score =
-                pingScore * pingWeight +
-                jitterScore * jitterWeight +
-                lossScore * lossWeight +
-                downloadScore * downloadWeight +
-                uploadScore * uploadWeight;
-
-            return Math.Round(score, 2);
-        }
-
-        private string BuildScoreDetails(ResultEntry result)
-        {
-            return $"{SelectedScoringProfile}: ping {Math.Round(result.Ping, 2)} мс, дрожание {Math.Round(result.Jitter, 2)} мс, потери {Math.Round(result.Loss, 2)}%, загрузка {Math.Round(result.Download, 2)} Мбит/с, отдача {Math.Round(result.Upload, 2)} Мбит/с";
-        }
-
-        private (double ping, double jitter, double loss, double download, double upload) GetProfileWeights()
-        {
-            return SelectedScoringProfile switch
-            {
-                ProfileGaming => (0.42, 0.28, 0.20, 0.06, 0.04),
-                ProfileStreaming => (0.20, 0.10, 0.15, 0.35, 0.20),
-                _ => (0.30, 0.20, 0.25, 0.15, 0.10)
-            };
-        }
-
-        private static string GetProfileDescription(string profileName)
-        {
-            return profileName switch
-            {
-                ProfileGaming => "Игры: максимальный приоритет низкому пингу, дрожанию и потерям. Скорости учитываются меньше.",
-                ProfileStreaming => "Стрим: повышенный вес загрузки и отдачи при сохранении умеренных требований к задержке.",
-                _ => "Универсальный: сбалансированный профиль для общего использования интернета и VPN."
-            };
         }
 
         private void UpdateRecommendation()
@@ -676,7 +662,6 @@ namespace VpnSpeedAnalyzer
             foreach (var entry in Results)
             {
                 entry.Rank = 0;
-                entry.RankBadge = "";
                 entry.RankMarker = "";
                 entry.RankMarkerColor = "#A8B0D9";
             }
@@ -686,13 +671,6 @@ namespace VpnSpeedAnalyzer
             foreach (var item in rankedResults)
             {
                 item.Rank = rank++;
-                item.RankBadge = item.Rank switch
-                {
-                    1 => "🥇",
-                    2 => "🥈",
-                    3 => "🥉",
-                    _ => ""
-                };
                 item.RankMarker = "●";
                 item.RankMarkerColor = item.Rank switch
                 {
@@ -704,7 +682,6 @@ namespace VpnSpeedAnalyzer
 
                 if (item.Rank > TopHostsCount)
                 {
-                    item.RankBadge = "";
                     item.RankMarker = "";
                 }
             }
@@ -793,24 +770,6 @@ namespace VpnSpeedAnalyzer
             StabilitySummaryText = $"Средняя стабильность линии: джиттер {avgJitterAll:F2} мс, потери {avgLossAll:F2}%";
 
             BestHostSummaryText = $"Лидер: {bestHost.Country} ({bestHost.Ip}) — ср. D.Q.S {bestHost.AverageScore:F2} по {bestHost.Samples} замерам";
-        }
-
-        private static double ScoreLowerIsBetter(double value, double ideal, double worst)
-        {
-            if (value <= ideal) return 100;
-            if (value >= worst) return 0;
-
-            var ratio = (value - ideal) / (worst - ideal);
-            return Math.Round((1 - ratio) * 100, 2);
-        }
-
-        private static double ScoreHigherIsBetter(double value, double ideal, double worst)
-        {
-            if (value >= ideal) return 100;
-            if (value <= worst) return 0;
-
-            var ratio = (value - worst) / (ideal - worst);
-            return Math.Round(ratio * 100, 2);
         }
 
         private void NotifyPropertyChanged(string propertyName) =>

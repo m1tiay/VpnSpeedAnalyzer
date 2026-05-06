@@ -11,14 +11,21 @@ namespace VpnSpeedAnalyzer.Logic
     /// </summary>
     public class MonitorController : IDisposable
     {
-        // Пауза между проверками IP адреса (15 секунд)
+        // Пауза между проверками IP адреса (15 секунд).
         private const int CheckIntervalMs = 15000;
+
+        // Принудительный замер скорости даже без смены IP — раз в 5 минут.
+        private static readonly TimeSpan ForcedRunInterval = TimeSpan.FromMinutes(5);
 
         private readonly IIpInfoService _ipService;
         private readonly ISpeedtestService _speedtest;
 
         private CancellationTokenSource? _cts;
+        private CancellationTokenSource? _delayCts;
+        private Task? _loopTask;
         private IpInfo? _lastIp;
+        private DateTime _lastSpeedtestUtc = DateTime.MinValue;
+        private bool _forceRunRequested;
 
         public event EventHandler<SpeedtestResult>? NewResult;
         public event EventHandler<IpInfo>? IpInfoUpdated;
@@ -45,7 +52,7 @@ namespace VpnSpeedAnalyzer.Logic
             }
 
             _cts = new CancellationTokenSource();
-            _ = LoopAsync(_cts.Token);
+            _loopTask = LoopAsync(_cts.Token);
         }
 
         /// <summary>
@@ -62,8 +69,40 @@ namespace VpnSpeedAnalyzer.Logic
             var cts = _cts;
             _cts = null;
 
-            cts.Cancel();
+            try
+            {
+                cts.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            _delayCts?.Cancel();
             cts.Dispose();
+            _loopTask = null;
+        }
+
+        /// <summary>
+        /// Просит монитор как можно скорее выполнить новый замер скорости
+        /// (даже если IP не изменился). Если монитор остановлен — ничего не делает.
+        /// </summary>
+        public void RequestImmediateRun()
+        {
+            if (_cts == null)
+            {
+                Logger.Write("RequestImmediateRun: монитор не запущен");
+                return;
+            }
+
+            Logger.Write("Запрошен внеплановый замер");
+            _forceRunRequested = true;
+            try
+            {
+                _delayCts?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
         }
 
         /// <summary>
@@ -72,8 +111,6 @@ namespace VpnSpeedAnalyzer.Logic
         public void Dispose()
         {
             Stop();
-            _cts?.Dispose();
-            _cts = null;
         }
 
         /// <summary>
@@ -99,12 +136,25 @@ namespace VpnSpeedAnalyzer.Logic
                             var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName) ? "unknown" : _ipService.LastSourceName;
                             StatusMessage?.Invoke(this, $"INFO: Источник IP: {sourceName}");
 
-                            if (_lastIp == null || info.Ip != _lastIp.Ip)
+                            var ipChanged = _lastIp == null || info.Ip != _lastIp.Ip;
+                            var intervalElapsed = (DateTime.UtcNow - _lastSpeedtestUtc) >= ForcedRunInterval;
+                            var shouldMeasure = ipChanged || intervalElapsed || _forceRunRequested;
+
+                            if (shouldMeasure)
                             {
-                                StatusMessage?.Invoke(this, $"CHECKING: IP обновлен через {sourceName}, запускаем speedtest...");
-                                Logger.Write("Ип-адрес изменился, запускаем тест скорости...");
+                                var reasonText = _forceRunRequested
+                                    ? "по запросу пользователя"
+                                    : ipChanged
+                                        ? "обнаружена смена IP"
+                                        : "по таймеру";
+
+                                StatusMessage?.Invoke(this, $"CHECKING: Запускаем speedtest ({reasonText})...");
+                                Logger.Write($"Запускаем тест скорости: {reasonText}");
+                                _forceRunRequested = false;
+
                                 var result = await _speedtest.RunAsync()
                                     .ConfigureAwait(false);
+                                _lastSpeedtestUtc = DateTime.UtcNow;
                                 Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
 
                                 if (result != null)
@@ -123,32 +173,33 @@ namespace VpnSpeedAnalyzer.Logic
                             }
                             else
                             {
-                                Logger.Write("Ип-адрес не изменился, пропускаем тест скорости");
+                                Logger.Write("Замер скорости пропущен: IP не менялся и таймер не истёк");
                                 StatusMessage?.Invoke(this, $"INFO: Идет проверка через {sourceName}, изменений IP не обнаружено");
                             }
 
                             _lastIp = info;
                         }
 
-                        await Task.Delay(CheckIntervalMs, token)
-                            .ConfigureAwait(false);
+                        await DelayAsync(CheckIntervalMs, token).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
                     {
-                        Logger.Write("Monitor loop cancelled");
-                        break;
+                        if (token.IsCancellationRequested)
+                        {
+                            Logger.Write("Monitor loop cancelled");
+                            break;
+                        }
+                        // Иначе нас просто разбудили через RequestImmediateRun — продолжаем цикл.
                     }
                     catch (Exception ex)
                     {
                         Logger.Write($"Monitor loop error: {ex.GetType().Name}: {ex.Message}");
                         StatusMessage?.Invoke(this, $"ERROR: Сбой цикла мониторинга: {ex.Message}");
-                        // Продолжаем цикл даже при ошибке.
                         try
                         {
-                            await Task.Delay(CheckIntervalMs, token)
-                                .ConfigureAwait(false);
+                            await DelayAsync(CheckIntervalMs, token).ConfigureAwait(false);
                         }
-                        catch (OperationCanceledException)
+                        catch (OperationCanceledException) when (token.IsCancellationRequested)
                         {
                             break;
                         }
@@ -158,6 +209,20 @@ namespace VpnSpeedAnalyzer.Logic
             finally
             {
                 Logger.Write("Monitor loop ended");
+            }
+        }
+
+        private async Task DelayAsync(int milliseconds, CancellationToken token)
+        {
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(token);
+            _delayCts = linked;
+            try
+            {
+                await Task.Delay(milliseconds, linked.Token).ConfigureAwait(false);
+            }
+            finally
+            {
+                _delayCts = null;
             }
         }
     }

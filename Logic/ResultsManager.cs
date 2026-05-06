@@ -11,13 +11,8 @@ namespace VpnSpeedAnalyzer.Logic
     /// </summary>
     public class ResultsManager
     {
-        private const int BestResultsCount = 5;
-
         private readonly ObservableCollection<ResultEntry> _results;
         private readonly List<ResultEntry> _allResults = new();
-        private bool _isBestOnlyMode;
-
-        public bool IsBestOnlyMode => _isBestOnlyMode;
 
         public ResultsManager(ObservableCollection<ResultEntry> results)
         {
@@ -26,55 +21,15 @@ namespace VpnSpeedAnalyzer.Logic
             Logger.Write("ResultsManager: инициализирован");
         }
 
+        public IReadOnlyList<ResultEntry> AllResults => _allResults;
+
         public void AddResult(ResultEntry entry)
         {
             if (entry == null)
                 throw new ArgumentNullException(nameof(entry));
 
             _allResults.Add(entry);
-
-            if (_isBestOnlyMode)
-            {
-                RebuildVisibleResults(GetBestResults());
-                return;
-            }
-
-            RebuildVisibleResults(_allResults);
-        }
-
-        /// <summary>
-        /// Переключает режим: полный список / только лучшие результаты
-        /// </summary>
-        public void ToggleBestOnly()
-        {
-            if (_allResults.Count == 0)
-            {
-                Logger.Write("Для фильтрации не хватает результатов");
-                return;
-            }
-
-            _isBestOnlyMode = !_isBestOnlyMode;
-
-            if (_isBestOnlyMode)
-            {
-                RebuildVisibleResults(GetBestResults());
-                Logger.Write($"Оставлено лучших результатов: {Math.Min(BestResultsCount, _allResults.Count)}");
-                return;
-            }
-
-            RebuildVisibleResults(_allResults);
-            Logger.Write("Восстановлен полный список результатов");
-        }
-
-        public void RefreshVisibleResults()
-        {
-            if (_isBestOnlyMode)
-            {
-                RebuildVisibleResults(GetBestResults());
-                return;
-            }
-
-            RebuildVisibleResults(_allResults);
+            RebuildVisibleResults();
         }
 
         public ResultEntry? GetRecommendedResult() =>
@@ -96,19 +51,13 @@ namespace VpnSpeedAnalyzer.Logic
                 entry.ScoreDetails = detailsSelector(entry);
             }
 
-            RefreshVisibleResults();
+            RebuildVisibleResults();
         }
 
-        private List<ResultEntry> GetBestResults() =>
-            _allResults
-                .OrderByDescending(r => r.Score)
-                .Take(BestResultsCount)
-                .ToList();
-
-        private void RebuildVisibleResults(IEnumerable<ResultEntry> source)
+        private void RebuildVisibleResults()
         {
             _results.Clear();
-            foreach (var entry in source.OrderByDescending(r => r.Score))
+            foreach (var entry in _allResults.OrderByDescending(r => r.Score))
                 _results.Add(entry);
         }
     }

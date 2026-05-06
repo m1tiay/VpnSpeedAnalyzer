@@ -28,6 +28,15 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # Кэшируем NuGet пакеты, чтобы ускорить повторные сборки
+      - name: 💾 Кэш NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       # Проверяем .NET
       - name: ℹ️  Проверка .NET
         run: dotnet --info
@@ -44,19 +53,31 @@ jobs:
       - name: 📦 Публикация Release EXE (standalone)
         run: dotnet publish VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained true -o out
 
+      # Считаем SHA256 для проверки целостности артефакта
+      - name: 🔐 SHA256 артефакта
+        shell: pwsh
+        run: |
+          $hash = Get-FileHash -Algorithm SHA256 -Path out/VpnSpeedAnalyzer.exe
+          "$($hash.Hash)  VpnSpeedAnalyzer.exe" | Out-File -Encoding ASCII out/VpnSpeedAnalyzer.exe.sha256
+          Get-Content out/VpnSpeedAnalyzer.exe.sha256
+
       # Загружаем артефакт в GitHub Actions
       - name: 📤 Загрузка артефакта
         uses: actions/upload-artifact@v5
         with:
           name: VpnSpeedAnalyzer-Release
-          path: out/VpnSpeedAnalyzer.exe
+          path: |
+            out/VpnSpeedAnalyzer.exe
+            out/VpnSpeedAnalyzer.exe.sha256
           retention-days: 30
 
-      # При релизе - добавляем exe в релиз GitHub
+      # При релизе - добавляем exe + sha256 в релиз GitHub
       - name: 🚀 Добавление EXE в релиз
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
         with:
-          files: out/VpnSpeedAnalyzer.exe
+          files: |
+            out/VpnSpeedAnalyzer.exe
+            out/VpnSpeedAnalyzer.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

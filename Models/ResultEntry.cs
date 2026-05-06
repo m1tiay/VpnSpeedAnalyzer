@@ -23,10 +23,10 @@ namespace VpnSpeedAnalyzer.Models
         /// <summary>Потеря пакетов в процентах</summary>
         public double Loss { get; set; }
 
-        /// <summary>Скорость загружки в Мбит/с</summary>
+        /// <summary>Скорость загрузки в Мбит/с</summary>
         public double Download { get; set; }
 
-        /// <summary>Скорость загружки в Мбит/с</summary>
+        /// <summary>Скорость отдачи в Мбит/с</summary>
         public double Upload { get; set; }
 
         /// <summary>Итоговая оценка качества хоста по шкале 0..100 (больше - лучше)</summary>
@@ -37,9 +37,6 @@ namespace VpnSpeedAnalyzer.Models
 
         /// <summary>Позиция в рейтинге (1 - лучший)</summary>
         public int Rank { get; set; }
-
-        /// <summary>Медаль для топ-3</summary>
-        public string RankBadge { get; set; } = "";
 
         /// <summary>Символ маркера в таблице рейтинга</summary>
         public string RankMarker { get; set; } = "";
