@@ -42,8 +42,10 @@ namespace VpnSpeedAnalyzer
         private string _statusText = "Остановлено";
         private string _statusColor = StatusColorWait;
 
+        // Прогресс: заполняющая шкала между автозамерами (после первого успешного результата).
         private readonly DispatcherTimer _progressTimer;
         private DateTime _lastSuccessUtc;
+        private bool _hadSuccessfulMeasurement;
         private bool _progressVisible;
         private bool _progressIsIndeterminate;
         private double _progressValue;
@@ -53,8 +55,39 @@ namespace VpnSpeedAnalyzer
         private string _ratingSummaryText = "Недостаточно данных для аналитики";
         private string _stabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
         private string _bestHostSummaryText = "Лучший хост появится после первого успешного замера";
-        private double _averageScore;
-        private double _averagePing;
+
+        private HostRatingRow? _selectedHostRatingRow;
+
+        private static readonly SolidColorBrush CmpBrushGood = CreateCmpBrushStatic("#59D9B7");
+        private static readonly SolidColorBrush CmpBrushBad = CreateCmpBrushStatic("#FF7AA2");
+        private static readonly SolidColorBrush CmpBrushNeutral = CreateCmpBrushStatic("#A8B0D9");
+
+        private string _cmpDqsLeaderText = "—";
+        private string _cmpDqsDeltaText = "";
+        private Brush _cmpDqsDeltaBrush = CmpBrushNeutral;
+
+        private string _cmpPingLeaderText = "—";
+        private string _cmpPingDeltaText = "";
+        private Brush _cmpPingDeltaBrush = CmpBrushNeutral;
+
+        private string _cmpJitterLeaderText = "—";
+        private string _cmpJitterDeltaText = "";
+        private Brush _cmpJitterDeltaBrush = CmpBrushNeutral;
+
+        private string _cmpLossLeaderText = "—";
+        private string _cmpLossDeltaText = "";
+        private Brush _cmpLossDeltaBrush = CmpBrushNeutral;
+
+        private string _cmpDownLeaderText = "—";
+        private string _cmpDownDeltaText = "";
+        private Brush _cmpDownDeltaBrush = CmpBrushNeutral;
+
+        private string _cmpUpLeaderText = "—";
+        private string _cmpUpDeltaText = "";
+        private Brush _cmpUpDeltaBrush = CmpBrushNeutral;
+
+        private bool _cmpShowDelta;
+
         private ResultEntry? _selectedResult;
         private bool _isMonitoring;
         private int _selectedMainTabIndex;
@@ -267,8 +300,48 @@ namespace VpnSpeedAnalyzer
 
         public int TotalMeasurements => Results.Count;
         public int UniqueHostsCount => HostRatings.Count;
-        public double AverageScore => _averageScore;
-        public double AveragePing => _averagePing;
+
+        /// <summary>Выбранная строка таблицы аналитики (сравнение с лидером).</summary>
+        public HostRatingRow? SelectedHostRatingRow
+        {
+            get => _selectedHostRatingRow;
+            set
+            {
+                if (!ReferenceEquals(_selectedHostRatingRow, value))
+                {
+                    _selectedHostRatingRow = value;
+                    NotifyPropertyChanged(nameof(SelectedHostRatingRow));
+                    RefreshLeaderComparison();
+                }
+            }
+        }
+
+        /// <summary>Показывать строку Δ относительно лидера для выбранной строки.</summary>
+        public bool CmpShowDelta => _cmpShowDelta;
+
+        public string CmpDqsLeaderText => _cmpDqsLeaderText;
+        public string CmpDqsDeltaText => _cmpDqsDeltaText;
+        public Brush CmpDqsDeltaBrush => _cmpDqsDeltaBrush;
+
+        public string CmpPingLeaderText => _cmpPingLeaderText;
+        public string CmpPingDeltaText => _cmpPingDeltaText;
+        public Brush CmpPingDeltaBrush => _cmpPingDeltaBrush;
+
+        public string CmpJitterLeaderText => _cmpJitterLeaderText;
+        public string CmpJitterDeltaText => _cmpJitterDeltaText;
+        public Brush CmpJitterDeltaBrush => _cmpJitterDeltaBrush;
+
+        public string CmpLossLeaderText => _cmpLossLeaderText;
+        public string CmpLossDeltaText => _cmpLossDeltaText;
+        public Brush CmpLossDeltaBrush => _cmpLossDeltaBrush;
+
+        public string CmpDownLeaderText => _cmpDownLeaderText;
+        public string CmpDownDeltaText => _cmpDownDeltaText;
+        public Brush CmpDownDeltaBrush => _cmpDownDeltaBrush;
+
+        public string CmpUpLeaderText => _cmpUpLeaderText;
+        public string CmpUpDeltaText => _cmpUpDeltaText;
+        public Brush CmpUpDeltaBrush => _cmpUpDeltaBrush;
 
         /// <summary>
         /// Видим ли индикатор прогресса в верхней панели.
@@ -303,20 +376,9 @@ namespace VpnSpeedAnalyzer
         }
 
         /// <summary>
-        /// Заполненность шкалы 0..100 при отсчёте до следующего замера.
+        /// Заполненность шкалы 0..100 при отсчёте до следующего автозамера (или во время замера по данным speedtest).
         /// </summary>
-        public double ProgressValue
-        {
-            get => _progressValue;
-            private set
-            {
-                if (Math.Abs(_progressValue - value) > 0.05)
-                {
-                    _progressValue = value;
-                    NotifyPropertyChanged(nameof(ProgressValue));
-                }
-            }
-        }
+        public double ProgressValue => _progressValue;
 
         /// <summary>
         /// Цвет индикатора, повторяет цвет статуса.
@@ -407,6 +469,8 @@ namespace VpnSpeedAnalyzer
                 Logger.Write("ViewModel: Monitor.IpInfoUpdated подписана");
                 _monitor.StatusMessage += Monitor_StatusMessage;
                 Logger.Write("ViewModel: Monitor.StatusMessage подписана");
+                _monitor.SpeedtestProgress += Monitor_SpeedtestProgress;
+                Logger.Write("ViewModel: Monitor.SpeedtestProgress подписана");
 
                 Logger.Write("ViewModel: ResultsManager создание");
                 // Создаём менеджер результатов
@@ -466,6 +530,7 @@ namespace VpnSpeedAnalyzer
                     UpdateRecommendation();
                     UpdateTopHosts();
                     UpdateHostAnalytics();
+                    _hadSuccessfulMeasurement = true;
                     _lastSuccessUtc = DateTime.UtcNow;
                     SetStatus(StatusKind.Ok, $"Последний замер: {DateTime.Now:HH:mm:ss}");
 
@@ -576,14 +641,15 @@ namespace VpnSpeedAnalyzer
             {
                 case StatusKind.Wait:
                     ProgressIsIndeterminate = false;
-                    ProgressValue = 0;
+                    ApplyProgressValue(0);
                     ProgressVisible = false;
                     StopProgressTimer();
                     break;
 
                 case StatusKind.Check:
-                    ProgressIsIndeterminate = true;
-                    ProgressValue = 0;
+                    // Реальный ход замера показываем по stderr (+ heartbeat); «бесконечная» полоса убрана сознательно.
+                    ProgressIsIndeterminate = false;
+                    ApplyProgressValue(3);
                     ProgressVisible = true;
                     StopProgressTimer();
                     break;
@@ -591,15 +657,22 @@ namespace VpnSpeedAnalyzer
                 case StatusKind.Ok:
                     ProgressIsIndeterminate = false;
                     ProgressVisible = true;
-                    if (_lastSuccessUtc == default)
-                        _lastSuccessUtc = DateTime.UtcNow;
-                    UpdateProgressTick();
-                    StartProgressTimer();
+                    if (_hadSuccessfulMeasurement && _lastSuccessUtc != default)
+                    {
+                        UpdateProgressTick();
+                        StartProgressTimer();
+                    }
+                    else
+                    {
+                        ApplyProgressValue(0);
+                        StopProgressTimer();
+                    }
+
                     break;
 
                 case StatusKind.Error:
                     ProgressIsIndeterminate = false;
-                    ProgressValue = 100;
+                    ApplyProgressValue(100);
                     ProgressVisible = true;
                     StopProgressTimer();
                     break;
@@ -626,9 +699,9 @@ namespace VpnSpeedAnalyzer
             if (!ProgressVisible || ProgressIsIndeterminate)
                 return;
 
-            if (_lastSuccessUtc == default)
+            if (!_hadSuccessfulMeasurement || _lastSuccessUtc == default)
             {
-                ProgressValue = 0;
+                ApplyProgressValue(0);
                 return;
             }
 
@@ -636,7 +709,34 @@ namespace VpnSpeedAnalyzer
             var ratio = elapsed.TotalSeconds / ProgressFullPeriod.TotalSeconds;
             if (ratio < 0) ratio = 0;
             if (ratio > 1) ratio = 1;
-            ProgressValue = ratio * 100.0;
+            ApplyProgressValue(ratio * 100.0);
+        }
+
+        /// <summary>
+        /// Выставляет Value прогрессбара без порога отсечения (иначе шкала между замерами может не двигаться).
+        /// </summary>
+        private void ApplyProgressValue(double value)
+        {
+            value = Math.Clamp(value, 0, 100);
+            if (Math.Abs(_progressValue - value) < 0.02)
+                return;
+
+            _progressValue = value;
+            NotifyPropertyChanged(nameof(ProgressValue));
+        }
+
+        /// <summary>
+        /// Процент хода speedtest с фонового потока.
+        /// </summary>
+        private void Monitor_SpeedtestProgress(object? sender, double percent)
+        {
+            _ = Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                ProgressVisible = true;
+                ProgressIsIndeterminate = false;
+                ProgressColor = StatusColorCheck;
+                ApplyProgressValue(percent);
+            }));
         }
 
         private enum StatusKind
@@ -658,6 +758,8 @@ namespace VpnSpeedAnalyzer
                 }
 
                 _isMonitoring = true;
+                _hadSuccessfulMeasurement = false;
+                _lastSuccessUtc = default;
                 SetStatus(StatusKind.Ok, "Мониторинг запущен");
                 _monitor.Start();
                 NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
@@ -683,6 +785,8 @@ namespace VpnSpeedAnalyzer
                 }
 
                 _isMonitoring = false;
+                _hadSuccessfulMeasurement = false;
+                _lastSuccessUtc = default;
                 SetStatus(StatusKind.Wait, "Остановлено");
                 _monitor.Stop();
                 NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
@@ -897,13 +1001,12 @@ namespace VpnSpeedAnalyzer
         {
             if (Results.Count == 0)
             {
+                _selectedHostRatingRow = null;
+                NotifyPropertyChanged(nameof(SelectedHostRatingRow));
                 HostRatings.Clear();
-                _averageScore = 0;
-                _averagePing = 0;
-                NotifyPropertyChanged(nameof(AverageScore));
-                NotifyPropertyChanged(nameof(AveragePing));
                 NotifyPropertyChanged(nameof(TotalMeasurements));
                 NotifyPropertyChanged(nameof(UniqueHostsCount));
+                RefreshLeaderComparison();
                 RatingSummaryText = "Недостаточно данных для аналитики";
                 StabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
                 BestHostSummaryText = "Лучший хост появится после первого успешного замера";
@@ -921,6 +1024,8 @@ namespace VpnSpeedAnalyzer
                     var avgPing = Math.Round(list.Average(x => x.Ping), 2);
                     var avgJitter = Math.Round(list.Average(x => x.Jitter), 2);
                     var avgLoss = Math.Round(list.Average(x => x.Loss), 2);
+                    var avgDl = Math.Round(list.Average(x => x.Download), 2);
+                    var avgUl = Math.Round(list.Average(x => x.Upload), 2);
                     var latest = list[0];
 
                     return new HostRatingRow
@@ -932,14 +1037,19 @@ namespace VpnSpeedAnalyzer
                         BestScore = Math.Round(best, 2),
                         AveragePing = avgPing,
                         AverageJitter = avgJitter,
-                        AverageLoss = avgLoss
+                        AverageLoss = avgLoss,
+                        AverageDownloadMbps = avgDl,
+                        AverageUploadMbps = avgUl
                     };
                 })
                 .OrderByDescending(x => x.AverageScore)
                 .ThenBy(x => x.AveragePing)
                 .ToList();
 
+            _selectedHostRatingRow = null;
+            NotifyPropertyChanged(nameof(SelectedHostRatingRow));
             HostRatings.Clear();
+
             var rank = 1;
             foreach (var host in grouped)
             {
@@ -947,10 +1057,6 @@ namespace VpnSpeedAnalyzer
                 HostRatings.Add(host);
             }
 
-            _averageScore = Math.Round(Results.Average(x => x.Score), 2);
-            _averagePing = Math.Round(Results.Average(x => x.Ping), 2);
-            NotifyPropertyChanged(nameof(AverageScore));
-            NotifyPropertyChanged(nameof(AveragePing));
             NotifyPropertyChanged(nameof(TotalMeasurements));
             NotifyPropertyChanged(nameof(UniqueHostsCount));
 
@@ -961,17 +1067,169 @@ namespace VpnSpeedAnalyzer
                 RatingSummaryText = "Недостаточно данных для аналитики";
                 StabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
                 BestHostSummaryText = "Лучший хост появится после первого успешного замера";
+                RefreshLeaderComparison();
                 return;
             }
 
             var scoreDelta = Math.Round(bestHost.AverageScore - worstHost.AverageScore, 2);
             RatingSummaryText = $"Разброс среднего D.Q.S между лучшим и худшим хостом: {scoreDelta:F2}";
 
-            var avgJitterAll = Results.Average(x => x.Jitter);
-            var avgLossAll = Results.Average(x => x.Loss);
-            StabilitySummaryText = $"Средняя стабильность линии: джиттер {avgJitterAll:F2} мс, потери {avgLossAll:F2}%";
+            var avgJitterByHostMedian = Math.Round(Median(HostRatings.Select(h => h.AverageJitter).ToList()), 2);
+            var avgLossByHostMedian = Math.Round(Median(HostRatings.Select(h => h.AverageLoss).ToList()), 2);
+            StabilitySummaryText =
+                $"Медиана по хостам (ср. джиттер / ср. потери): {avgJitterByHostMedian:F2} мс, {avgLossByHostMedian:F2}%";
 
-            BestHostSummaryText = $"Лидер: {bestHost.Country} ({bestHost.Ip}) — ср. D.Q.S {bestHost.AverageScore:F2} по {bestHost.Samples} замерам";
+            BestHostSummaryText =
+                $"Лидер: {bestHost.Country} ({bestHost.Ip}) — ср. D.Q.S {bestHost.AverageScore:F2} по {bestHost.Samples} замерам, " +
+                $"↓ {bestHost.AverageDownloadMbps:F1} / ↑ {bestHost.AverageUploadMbps:F1} Мбит/с";
+
+            RefreshLeaderComparison();
+        }
+
+        /// <summary>
+        /// KPI аналитики: значение лидера таблицы и при выборе строки — Δ к лидеру (цвет по направлению «лучше/хуже»).
+        /// </summary>
+        private void RefreshLeaderComparison()
+        {
+            var leader = HostRatings.FirstOrDefault();
+            var sel = _selectedHostRatingRow;
+
+            if (leader == null)
+            {
+                _cmpShowDelta = false;
+                _cmpDqsLeaderText = "—";
+                _cmpPingLeaderText = "—";
+                _cmpJitterLeaderText = "—";
+                _cmpLossLeaderText = "—";
+                _cmpDownLeaderText = "—";
+                _cmpUpLeaderText = "—";
+                BlankComparisonDeltas();
+                NotifyLeaderComparisonProps();
+                return;
+            }
+
+            var inv = CultureInfo.InvariantCulture;
+            _cmpDqsLeaderText = leader.AverageScore.ToString("F2", inv);
+            _cmpPingLeaderText = leader.AveragePing.ToString("F2", inv);
+            _cmpJitterLeaderText = leader.AverageJitter.ToString("F2", inv);
+            _cmpLossLeaderText = leader.AverageLoss.ToString("F2", inv);
+            _cmpDownLeaderText = leader.AverageDownloadMbps.ToString("F2", inv);
+            _cmpUpLeaderText = leader.AverageUploadMbps.ToString("F2", inv);
+
+            _cmpShowDelta = sel != null;
+            if (sel == null)
+            {
+                BlankComparisonDeltas();
+                NotifyLeaderComparisonProps();
+                return;
+            }
+
+            ComputeDirectedDelta(sel.AverageScore, leader.AverageScore, higherIsBetter: true, "F2", 0.01, out _cmpDqsDeltaText, out _cmpDqsDeltaBrush);
+            ComputeDirectedDelta(sel.AveragePing, leader.AveragePing, higherIsBetter: false, "F2", 0.05, out _cmpPingDeltaText, out _cmpPingDeltaBrush);
+            ComputeDirectedDelta(sel.AverageJitter, leader.AverageJitter, higherIsBetter: false, "F2", 0.05, out _cmpJitterDeltaText, out _cmpJitterDeltaBrush);
+            ComputeDirectedDelta(sel.AverageLoss, leader.AverageLoss, higherIsBetter: false, "F2", 0.05, out _cmpLossDeltaText, out _cmpLossDeltaBrush);
+            ComputeDirectedDelta(sel.AverageDownloadMbps, leader.AverageDownloadMbps, higherIsBetter: true, "F2", 0.05, out _cmpDownDeltaText, out _cmpDownDeltaBrush);
+            ComputeDirectedDelta(sel.AverageUploadMbps, leader.AverageUploadMbps, higherIsBetter: true, "F2", 0.05, out _cmpUpDeltaText, out _cmpUpDeltaBrush);
+
+            NotifyLeaderComparisonProps();
+        }
+
+        private void BlankComparisonDeltas()
+        {
+            _cmpDqsDeltaText = "";
+            _cmpDqsDeltaBrush = CmpBrushNeutral;
+            _cmpPingDeltaText = "";
+            _cmpPingDeltaBrush = CmpBrushNeutral;
+            _cmpJitterDeltaText = "";
+            _cmpJitterDeltaBrush = CmpBrushNeutral;
+            _cmpLossDeltaText = "";
+            _cmpLossDeltaBrush = CmpBrushNeutral;
+            _cmpDownDeltaText = "";
+            _cmpDownDeltaBrush = CmpBrushNeutral;
+            _cmpUpDeltaText = "";
+            _cmpUpDeltaBrush = CmpBrushNeutral;
+        }
+
+        private void NotifyLeaderComparisonProps()
+        {
+            NotifyPropertyChanged(nameof(CmpShowDelta));
+            NotifyPropertyChanged(nameof(CmpDqsLeaderText));
+            NotifyPropertyChanged(nameof(CmpDqsDeltaText));
+            NotifyPropertyChanged(nameof(CmpDqsDeltaBrush));
+            NotifyPropertyChanged(nameof(CmpPingLeaderText));
+            NotifyPropertyChanged(nameof(CmpPingDeltaText));
+            NotifyPropertyChanged(nameof(CmpPingDeltaBrush));
+            NotifyPropertyChanged(nameof(CmpJitterLeaderText));
+            NotifyPropertyChanged(nameof(CmpJitterDeltaText));
+            NotifyPropertyChanged(nameof(CmpJitterDeltaBrush));
+            NotifyPropertyChanged(nameof(CmpLossLeaderText));
+            NotifyPropertyChanged(nameof(CmpLossDeltaText));
+            NotifyPropertyChanged(nameof(CmpLossDeltaBrush));
+            NotifyPropertyChanged(nameof(CmpDownLeaderText));
+            NotifyPropertyChanged(nameof(CmpDownDeltaText));
+            NotifyPropertyChanged(nameof(CmpDownDeltaBrush));
+            NotifyPropertyChanged(nameof(CmpUpLeaderText));
+            NotifyPropertyChanged(nameof(CmpUpDeltaText));
+            NotifyPropertyChanged(nameof(CmpUpDeltaBrush));
+        }
+
+        /// <summary>
+        /// Δ = выбранный − лидер; зелёный/красный по тому, лучше ли для метрики стало больше или меньше.
+        /// </summary>
+        private static void ComputeDirectedDelta(
+            double selectedValue,
+            double leaderValue,
+            bool higherIsBetter,
+            string format,
+            double epsilon,
+            out string deltaText,
+            out Brush deltaBrush)
+        {
+            var d = selectedValue - leaderValue;
+            if (Math.Abs(d) < epsilon)
+            {
+                deltaText = format == "F2" ? "Δ 0.00" : "Δ 0";
+                deltaBrush = CmpBrushNeutral;
+                return;
+            }
+
+            var inv = CultureInfo.InvariantCulture;
+            var body = d > 0
+                ? "+" + d.ToString(format, inv)
+                : "\u2212" + (-d).ToString(format, inv);
+
+            deltaText = "Δ " + body;
+            deltaBrush = DeltaBrushForChange(d, higherIsBetter);
+        }
+
+        private static Brush DeltaBrushForChange(double delta, bool higherIsBetter)
+        {
+            if (higherIsBetter)
+                return delta > 0 ? CmpBrushGood : CmpBrushBad;
+            return delta > 0 ? CmpBrushBad : CmpBrushGood;
+        }
+
+        private static SolidColorBrush CreateCmpBrushStatic(string hex)
+        {
+            var b = (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
+            b.Freeze();
+            return b;
+        }
+
+        /// <summary>
+        /// Медиана по уже извлечённым значениям (устойчива к выбросам).
+        /// </summary>
+        private static double Median(IReadOnlyList<double> values)
+        {
+            if (values.Count == 0)
+                return 0;
+
+            var sorted = values.OrderBy(x => x).ToList();
+            int mid = sorted.Count / 2;
+            if ((sorted.Count & 1) == 1)
+                return sorted[mid];
+
+            return (sorted[mid - 1] + sorted[mid]) / 2.0;
         }
 
         private void NotifyPropertyChanged(string propertyName) =>

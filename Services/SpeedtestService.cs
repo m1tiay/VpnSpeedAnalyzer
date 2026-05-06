@@ -1,8 +1,11 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using VpnSpeedAnalyzer.Models;
 using VpnSpeedAnalyzer.Logic;
@@ -19,6 +22,10 @@ namespace VpnSpeedAnalyzer.Services
         private const int ProcessTimeoutMs = 300000; // 5 минут
         private const int MaxAttempts = 3;
         private const int RetryDelayMs = 5000;
+
+        private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
+        private static readonly Regex PercentRx = new(@"(?<p>\d{1,3}(?:\.\d+)?)\s*%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         public string? LastFailureReason { get; private set; }
 
         public SpeedtestService()
@@ -26,12 +33,11 @@ namespace VpnSpeedAnalyzer.Services
             Logger.Write("SpeedtestService конструктор вызван");
         }
 
-        public async Task<SpeedtestResult?> RunAsync()
+        public async Task<SpeedtestResult?> RunAsync(IProgress<double>? progress = null, CancellationToken cancellationToken = default)
         {
             LastFailureReason = null;
             try
             {
-                // Проверяем что утилита Speedtest доступна
                 var speedtestPath = GetSpeedtestPath();
                 if (speedtestPath == null)
                 {
@@ -45,7 +51,7 @@ namespace VpnSpeedAnalyzer.Services
                     var psi = new ProcessStartInfo
                     {
                         FileName = speedtestPath,
-                        Arguments = "--format=json",
+                        Arguments = "--format=json --accept-license --accept-gdpr",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
@@ -60,28 +66,48 @@ namespace VpnSpeedAnalyzer.Services
                         return null;
                     }
 
-                    string output = await proc.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-                    string errorOutput = await proc.StandardError.ReadToEndAsync().ConfigureAwait(false);
+                    using var killReg = cancellationToken.Register(() => TryKill(proc));
 
-                    if (!proc.WaitForExit(ProcessTimeoutMs))
+                    var progState = new ProgressState();
+                    progState.BumpToAtLeast(4, progress);
+
+                    using var hbCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+                    Task stderrPump = StderrPumpAsync(proc.StandardError, progState, progress, cancellationToken);
+                    Task heartbeat = HeartbeatAsync(proc, progState, progress, hbCts.Token);
+
+                    string output;
+                    try
                     {
-                        proc.Kill();
+                        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                        timeoutCts.CancelAfter(ProcessTimeoutMs);
+
+                        output = await proc.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+                        await proc.WaitForExitAsync(timeoutCts.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
                         Logger.Write($"Процесс Speedtest превысил таймаут: {ProcessTimeoutMs}мс (попытка {attempt}/{MaxAttempts})");
+                        TryKill(proc);
                         LastFailureReason = $"Таймаут speedtest ({ProcessTimeoutMs / 1000} сек)";
+                        hbCts.Cancel();
+                        await AwaitPump(stderrPump, heartbeat).ConfigureAwait(false);
+                        progress?.Report(0);
                         if (attempt < MaxAttempts)
-                            await Task.Delay(RetryDelayMs).ConfigureAwait(false);
+                            await Task.Delay(RetryDelayMs, cancellationToken).ConfigureAwait(false);
                         continue;
                     }
+
+                    hbCts.Cancel();
+                    await AwaitPump(stderrPump, heartbeat).ConfigureAwait(false);
 
                     if (proc.ExitCode != 0)
                     {
                         Logger.Write($"Процесс Speedtest завершился с кодом {proc.ExitCode} (попытка {attempt}/{MaxAttempts})");
-                        if (!string.IsNullOrWhiteSpace(errorOutput))
-                            Logger.Write($"Speedtest stderr: {errorOutput.Trim()}");
                         LastFailureReason = $"Код завершения speedtest: {proc.ExitCode}";
-
+                        progress?.Report(0);
                         if (attempt < MaxAttempts)
-                            await Task.Delay(RetryDelayMs).ConfigureAwait(false);
+                            await Task.Delay(RetryDelayMs, cancellationToken).ConfigureAwait(false);
                         continue;
                     }
 
@@ -89,19 +115,24 @@ namespace VpnSpeedAnalyzer.Services
                     {
                         Logger.Write($"Speedtest вернул пустой результат (попытка {attempt}/{MaxAttempts})");
                         LastFailureReason = "Speedtest вернул пустой результат";
+                        progress?.Report(0);
                         if (attempt < MaxAttempts)
-                            await Task.Delay(RetryDelayMs).ConfigureAwait(false);
+                            await Task.Delay(RetryDelayMs, cancellationToken).ConfigureAwait(false);
                         continue;
                     }
 
                     var parsed = ParseSpeedtestOutput(output);
                     if (parsed != null)
+                    {
+                        progState.BumpToAtLeast(100, progress);
                         return parsed;
+                    }
 
                     Logger.Write($"Не удалось распарсить результат speedtest (попытка {attempt}/{MaxAttempts})");
                     LastFailureReason = "Не удалось распарсить ответ speedtest";
+                    progress?.Report(0);
                     if (attempt < MaxAttempts)
-                        await Task.Delay(RetryDelayMs).ConfigureAwait(false);
+                        await Task.Delay(RetryDelayMs, cancellationToken).ConfigureAwait(false);
                 }
 
                 Logger.Write("Все попытки speedtest завершились неуспешно");
@@ -120,6 +151,12 @@ namespace VpnSpeedAnalyzer.Services
                 LastFailureReason = ex.Message;
                 return null;
             }
+            catch (OperationCanceledException)
+            {
+                Logger.Write("Speedtest отменён");
+                LastFailureReason ??= "Замер отменён";
+                return null;
+            }
             catch (Exception ex)
             {
                 Logger.Write($"Неожиданная ошибка Speedtest: {ex.GetType().Name}: {ex.Message}");
@@ -128,18 +165,161 @@ namespace VpnSpeedAnalyzer.Services
             }
         }
 
+        private static async Task AwaitPump(Task stderrPump, Task heartbeat)
+        {
+            try
+            {
+                await Task.WhenAll(
+                    Task.WhenAny(stderrPump, Task.Delay(800)),
+                    Task.WhenAny(heartbeat, Task.Delay(800))).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Игнорируем сбой вспомогательных задач — основной результат уже получен или таймаут.
+            }
+        }
+
+        /// <summary>
+        /// Читает stderr построчно; при отсутствии явных процентов подсказываем фазы по ключевым словам.
+        /// </summary>
+        private static async Task StderrPumpAsync(
+            StreamReader stderr,
+            ProgressState state,
+            IProgress<double>? progress,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var line = await stderr.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                    if (line == null)
+                        break;
+
+                    var inferred = InferProgressFromLine(line);
+                    if (inferred.HasValue)
+                        state.BumpToAtLeast(inferred.Value, progress);
+                }
+            }
+            catch
+            {
+                // Поток мог быть оборван при Kill — нормально.
+            }
+        }
+
+        /// <summary>
+        /// Если CLI молчит в JSON-режиме, чуть двигаем шкалу, чтобы не казалось «зависло».
+        /// </summary>
+        private static async Task HeartbeatAsync(
+            Process proc,
+            ProgressState state,
+            IProgress<double>? progress,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    await Task.Delay(2800, cancellationToken).ConfigureAwait(false);
+                    if (proc.HasExited)
+                        break;
+
+                    // Не перепрыгиваем реальные проценты из stderr; около 90% оставляем до завершения.
+                    state.BumpHeart(progress);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // отмена heartbeat — ожидаемо
+            }
+        }
+
+        private static double? InferProgressFromLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                return null;
+
+            var m = PercentRx.Match(line);
+            if (m.Success && double.TryParse(m.Groups["p"].Value, NumberStyles.AllowDecimalPoint, Invariant, out var pct))
+                return Math.Clamp(pct, 0, 99);
+
+            var s = line.ToLowerInvariant();
+
+            if (s.Contains("retrieving") && s.Contains("configuration"))
+                return 7;
+            if (s.Contains("server list") || s.Contains("selecting"))
+                return 14;
+            if (s.Contains("latency") || (s.Contains("ping") && s.Contains("test")))
+                return 28;
+            if (s.Contains("jitter"))
+                return 32;
+            if (s.Contains("download"))
+                return 44;
+            if (s.Contains("upload"))
+                return 74;
+
+            return null;
+        }
+
+        private static void TryKill(Process proc)
+        {
+            try
+            {
+                if (proc.HasExited)
+                    return;
+                proc.Kill(entireTree: true);
+            }
+            catch
+            {
+                // Игнорируем — процесс мог уже завершиться.
+            }
+        }
+
+        private sealed class ProgressState
+        {
+            private readonly object _gate = new();
+            private double _max;
+
+            public void BumpToAtLeast(double value, IProgress<double>? p)
+            {
+                double toReport;
+                lock (_gate)
+                {
+                    value = Math.Clamp(value, 0, 100);
+                    if (value <= _max)
+                        return;
+                    _max = value;
+                    toReport = _max;
+                }
+
+                p?.Report(toReport);
+            }
+
+            public void BumpHeart(IProgress<double>? p)
+            {
+                lock (_gate)
+                {
+                    if (_max >= 92)
+                        return;
+
+                    var next = Math.Min(90, _max + 5);
+                    if (next <= _max)
+                        return;
+                    _max = next;
+                    p?.Report(_max);
+                }
+            }
+        }
+
         /// <summary>
         /// Ищет исполняемый файл Speedtest в PATH или в папке приложения
         /// </summary>
-        /// <returns>Полный путь к исполняемому файлу Speedtest или null если не найдено</returns>
         private static string? GetSpeedtestPath()
         {
-            // Сначала проверяем папку приложения
             var appDirPath = Path.Combine(AppContext.BaseDirectory, "speedtest.exe");
             if (File.Exists(appDirPath))
                 return appDirPath;
 
-            // Затем проверяем переменную окружения PATH
             var pathVar = Environment.GetEnvironmentVariable("PATH");
             if (string.IsNullOrEmpty(pathVar))
                 return null;
@@ -154,7 +334,6 @@ namespace VpnSpeedAnalyzer.Services
                 }
                 catch (ArgumentException)
                 {
-                    // Некорректные символы в пути - пропускаем эту папку
                     continue;
                 }
             }
@@ -162,9 +341,6 @@ namespace VpnSpeedAnalyzer.Services
             return null;
         }
 
-        /// <summary>
-        /// Парсит JSON вывод Speedtest в объект SpeedtestResult
-        /// </summary>
         private static SpeedtestResult? ParseSpeedtestOutput(string json)
         {
             try
@@ -176,7 +352,6 @@ namespace VpnSpeedAnalyzer.Services
                     return null;
                 }
 
-                // Проверяем что все обязательные поля присутствуют
                 if (raw.Interface?.ExternalIp == null ||
                     raw.Server?.Country == null ||
                     raw.Ping == null ||

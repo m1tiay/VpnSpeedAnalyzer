@@ -14,5 +14,11 @@ namespace VpnSpeedAnalyzer.Models
         public double AveragePing { get; set; }
         public double AverageJitter { get; set; }
         public double AverageLoss { get; set; }
+
+        /// <summary>Средняя скорость загрузки по замерам хоста (Мбит/с).</summary>
+        public double AverageDownloadMbps { get; set; }
+
+        /// <summary>Средняя скорость отдачи по замерам хоста (Мбит/с).</summary>
+        public double AverageUploadMbps { get; set; }
     }
 }

@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using VpnSpeedAnalyzer.Models;
 
@@ -14,9 +15,11 @@ namespace VpnSpeedAnalyzer.Services
         string? LastFailureReason { get; }
 
         /// <summary>
-        /// Запускает тест скорости асинхронно
+        /// Запускает тест скорости асинхронно.
         /// </summary>
+        /// <param name="progress">Проценты 0..100 по stderr/фазам (приблизительно).</param>
+        /// <param name="cancellationToken">Отмена — завершение процесса speedtest.</param>
         /// <returns>Результат теста скорости или null если тест не удался</returns>
-        Task<SpeedtestResult?> RunAsync();
+        Task<SpeedtestResult?> RunAsync(IProgress<double>? progress = null, CancellationToken cancellationToken = default);
     }
 }

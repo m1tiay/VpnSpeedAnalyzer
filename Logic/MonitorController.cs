@@ -22,6 +22,9 @@ namespace VpnSpeedAnalyzer.Logic
         // Принудительный замер скорости даже без изменения контура — раз в 5 минут.
         private static readonly TimeSpan ForcedRunInterval = TimeSpan.FromMinutes(5);
 
+        // Резервное обнаружение смены VPN: публичный IP опрашивается реже, если локальный отпечаток не меняется.
+        private const int EgressPollIntervalMs = 20000;
+
         private readonly IIpInfoService _ipService;
         private readonly ISpeedtestService _speedtest;
 
@@ -39,11 +42,19 @@ namespace VpnSpeedAnalyzer.Logic
 
         private bool _forceRunRequested;
 
+        /// <summary>Последний известный egress IP (гео-API), чтобы ловить смену выхода без смены локального отпечатка.</summary>
+        private string? _lastSeenEgressIp;
+
+        private DateTime _lastEgressPollUtc = DateTime.MinValue;
+
         public event EventHandler<SpeedtestResult>? NewResult;
 
         /// <summary>Обновление IP/гео после замера или при запросе (не каждый тик локального цикла).</summary>
         public event EventHandler<IpInfo>? IpInfoUpdated;
         public event EventHandler<string>? StatusMessage;
+
+        /// <summary>Проценты 0..100 хода speedtest (stderr/фазовая оценка).</summary>
+        public event EventHandler<double>? SpeedtestProgress;
 
         public MonitorController(IIpInfoService ipService, ISpeedtestService speedtest)
         {
@@ -67,6 +78,8 @@ namespace VpnSpeedAnalyzer.Logic
 
             _acceptedFingerprint = null;
             _debounceCandidateFingerprint = null;
+            _lastSeenEgressIp = null;
+            _lastEgressPollUtc = DateTime.MinValue;
             NetworkChange.NetworkAddressChanged += OnNetworkTopologyHint;
             _cts = new CancellationTokenSource();
             _loopTask = LoopAsync(_cts.Token);
@@ -84,6 +97,9 @@ namespace VpnSpeedAnalyzer.Logic
             }
 
             NetworkChange.NetworkAddressChanged -= OnNetworkTopologyHint;
+
+            _lastSeenEgressIp = null;
+            _lastEgressPollUtc = DateTime.MinValue;
 
             var cts = _cts;
             _cts = null;
@@ -196,17 +212,51 @@ namespace VpnSpeedAnalyzer.Logic
                         // Первый тик ещё не знает базовый контур — фиксируем текущий снимок без ожидания debounce.
                         _acceptedFingerprint ??= fingerprint;
 
+                        var utcNow = DateTime.UtcNow;
+                        var egressIpChanged = false;
+                        if ((utcNow - _lastEgressPollUtc).TotalMilliseconds >= EgressPollIntervalMs
+                            || _lastEgressPollUtc == DateTime.MinValue)
+                        {
+                            _lastEgressPollUtc = utcNow;
+                            try
+                            {
+                                var ipSnap = await _ipService.GetCurrentAsync().ConfigureAwait(false);
+                                if (ipSnap?.Ip is { Length: > 0 } ipCur)
+                                {
+                                    if (_lastSeenEgressIp != null
+                                        && !_lastSeenEgressIp.Equals(ipCur, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        egressIpChanged = true;
+                                        Logger.Write($"Смена egress IP (опрос {EgressPollIntervalMs}мс): {_lastSeenEgressIp} → {ipCur}");
+                                        IpInfoUpdated?.Invoke(this, ipSnap);
+                                    }
+                                    else if (_lastSeenEgressIp == null)
+                                    {
+                                        IpInfoUpdated?.Invoke(this, ipSnap);
+                                    }
+
+                                    _lastSeenEgressIp = ipCur;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Write($"Опрос egress IP: {ex.Message}");
+                            }
+                        }
+
                         var sinceLastMeasurement = DateTime.UtcNow - _lastSpeedtestUtc;
 
                         var intervalElapsed = sinceLastMeasurement >= ForcedRunInterval;
 
                         var firstMeasurement = _lastSpeedtestUtc == DateTime.MinValue;
 
-                        var shouldMeasure = firstMeasurement || topologyConfirmed || intervalElapsed || _forceRunRequested;
+                        var shouldMeasure = firstMeasurement || topologyConfirmed || egressIpChanged || intervalElapsed ||
+                                            _forceRunRequested;
 
                         Logger.Write(
-                            $"Тик монитора: topologyConfirmed={topologyConfirmed}, первыйЗамер={firstMeasurement}, " +
-                            $"прошло={sinceLastMeasurement.TotalSeconds:F0}s, intervalElapsed={intervalElapsed}, force={_forceRunRequested}, run={shouldMeasure}");
+                            $"Тик монитора: topologyConfirmed={topologyConfirmed}, egressIpChanged={egressIpChanged}, " +
+                            $"первыйЗамер={firstMeasurement}, прошло={sinceLastMeasurement.TotalSeconds:F0}s, " +
+                            $"intervalElapsed={intervalElapsed}, force={_forceRunRequested}, run={shouldMeasure}");
 
                         if (shouldMeasure)
                         {
@@ -214,15 +264,18 @@ namespace VpnSpeedAnalyzer.Logic
                                 ? "по запросу"
                                 : topologyConfirmed
                                     ? "смена сетевого контура"
-                                    : firstMeasurement
-                                        ? "старт мониторинга"
-                                        : "по таймеру";
+                                    : egressIpChanged
+                                        ? "смена публичного IP"
+                                        : firstMeasurement
+                                            ? "старт мониторинга"
+                                            : "по таймеру";
 
                             StatusMessage?.Invoke(this, $"CHECK:Замер скорости ({reasonText})");
                             Logger.Write($"Запускаем тест скорости: {reasonText}");
                             _forceRunRequested = false;
 
-                            var result = await _speedtest.RunAsync().ConfigureAwait(false);
+                            var speedProgress = new Progress<double>(p => SpeedtestProgress?.Invoke(this, p));
+                            var result = await _speedtest.RunAsync(speedProgress, token).ConfigureAwait(false);
                             _lastSpeedtestUtc = DateTime.UtcNow;
 
                             Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
@@ -233,6 +286,9 @@ namespace VpnSpeedAnalyzer.Logic
                                 var geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
 
                                 MergeGeoIntoResult(result, geo);
+
+                                if (!string.IsNullOrWhiteSpace(result.Ip))
+                                    _lastSeenEgressIp = result.Ip;
 
                                 var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName)
                                     ? "unknown"

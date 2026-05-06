@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:sp="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
+        xmlns:conv="clr-namespace:VpnSpeedAnalyzer.Converters"
         mc:Ignorable="d"
         Title="VPN Speed Analyzer"
         Width="1180" Height="760"
@@ -13,6 +14,7 @@
         Background="#141622">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:ProgressBarIndicatorWidthConverter x:Key="PbWidthConv"/>
 
         <Style TargetType="{x:Type Control}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -498,8 +500,8 @@
             <Setter Property="Background" Value="#1B1F34"/>
             <Setter Property="Foreground" Value="{StaticResource OkBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Height" Value="4"/>
-            <Setter Property="MinHeight" Value="4"/>
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="MinHeight" Value="6"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -511,7 +513,16 @@
                                 <Border x:Name="PART_Indicator"
                                         HorizontalAlignment="Left"
                                         Background="{TemplateBinding Foreground}"
-                                        CornerRadius="2"/>
+                                        CornerRadius="2">
+                                    <Border.Width>
+                                        <MultiBinding Converter="{StaticResource PbWidthConv}">
+                                            <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ActualWidth"/>
+                                            <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Value"/>
+                                            <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Minimum"/>
+                                            <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Maximum"/>
+                                        </MultiBinding>
+                                    </Border.Width>
+                                </Border>
                                 <Border x:Name="IndeterminateGlow"
                                         Width="120"
                                         HorizontalAlignment="Left"
@@ -878,36 +889,126 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <UniformGrid Rows="1" Columns="4" Margin="0,0,0,8">
-                            <GroupBox Header="Всего замеров" Margin="0,0,8,0">
-                                <TextBlock Text="{Binding TotalMeasurements}"
-                                           Foreground="{StaticResource TextBrush}"
-                                           FontSize="22"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Left"/>
-                            </GroupBox>
-                            <GroupBox Header="Уникальных хостов" Margin="0,0,8,0">
-                                <TextBlock Text="{Binding UniqueHostsCount}"
-                                           Foreground="{StaticResource TextBrush}"
-                                           FontSize="22"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Left"/>
-                            </GroupBox>
-                            <GroupBox Header="Средний D.Q.S" Margin="0,0,8,0">
-                                <TextBlock Text="{Binding AverageScore, StringFormat=F2}"
-                                           Foreground="{StaticResource OkBrush}"
-                                           FontSize="22"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Left"/>
-                            </GroupBox>
-                            <GroupBox Header="Средний пинг (мс)" Margin="0">
-                                <TextBlock Text="{Binding AveragePing, StringFormat=F2}"
-                                           Foreground="{StaticResource TextBrush}"
-                                           FontSize="22"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Left"/>
-                            </GroupBox>
-                        </UniformGrid>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <UniformGrid Rows="1" Columns="4" Margin="0,0,0,8" Grid.Row="0">
+                                <GroupBox Header="Всего замеров" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding TotalMeasurements}"
+                                               Foreground="{StaticResource TextBrush}"
+                                               FontSize="22"
+                                               FontWeight="Bold"
+                                               HorizontalAlignment="Left"/>
+                                </GroupBox>
+                                <GroupBox Header="Уникальных хостов" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding UniqueHostsCount}"
+                                               Foreground="{StaticResource TextBrush}"
+                                               FontSize="22"
+                                               FontWeight="Bold"
+                                               HorizontalAlignment="Left"/>
+                                </GroupBox>
+                                <GroupBox Header="Ср. D.Q.S (лидер)" Margin="0,0,8,0"
+                                          ToolTip="Число по лидеру таблицы (#1). Выберите строку — покажем Δ к лидеру: для D.Q.S «+» выгодно (зелёный), «−» хуже (красный).">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding CmpDqsLeaderText}"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding CmpDqsDeltaText}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{Binding CmpDqsDeltaBrush}"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                    </StackPanel>
+                                </GroupBox>
+                                <GroupBox Header="Ср. пинг, мс (лидер)"
+                                          ToolTip="По лидеру. Для пинга меньше лучше: «+Δ» к худшему красным, «−Δ» к лучшему зелёным.">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding CmpPingLeaderText}"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding CmpPingDeltaText}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{Binding CmpPingDeltaBrush}"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                    </StackPanel>
+                                </GroupBox>
+                            </UniformGrid>
+                            <UniformGrid Rows="1" Columns="4" Grid.Row="1">
+                                <GroupBox Header="Ср. дрожание, мс (лидер)" Margin="0,0,8,0"
+                                          ToolTip="Меньше джиттер лучше — как для пинга.">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding CmpJitterLeaderText}"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding CmpJitterDeltaText}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{Binding CmpJitterDeltaBrush}"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                    </StackPanel>
+                                </GroupBox>
+                                <GroupBox Header="Ср. потери % (лидер)" Margin="0,0,8,0"
+                                          ToolTip="Меньше потери лучше.">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding CmpLossLeaderText}"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding CmpLossDeltaText}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{Binding CmpLossDeltaBrush}"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                    </StackPanel>
+                                </GroupBox>
+                                <GroupBox Header="Ср. загрузка, Мбит/с (лидер)" Margin="0,0,8,0"
+                                          ToolTip="Выше скорость лучше: «+Δ» к выгоде — зелёный.">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding CmpDownLeaderText}"
+                                                   Foreground="{StaticResource OkBrush}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding CmpDownDeltaText}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{Binding CmpDownDeltaBrush}"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                    </StackPanel>
+                                </GroupBox>
+                                <GroupBox Header="Ср. отдача, Мбит/с (лидер)"
+                                          ToolTip="Выше отдача лучше — как загрузка.">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding CmpUpLeaderText}"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   FontSize="22"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding CmpUpDeltaText}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{Binding CmpUpDeltaBrush}"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                    </StackPanel>
+                                </GroupBox>
+                            </UniformGrid>
+                        </Grid>
 
                         <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10">
                             <Grid>
@@ -917,7 +1018,15 @@
                                 </Grid.RowDefinitions>
 
                                 <Border CornerRadius="8" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" ClipToBounds="True">
-                                    <DataGrid ItemsSource="{Binding HostRatings}" IsSynchronizedWithCurrentItem="False" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                    <DataGrid ItemsSource="{Binding HostRatings}"
+                                              SelectedItem="{Binding SelectedHostRatingRow, Mode=TwoWay}"
+                                              SelectionMode="Single"
+                                              SelectionUnit="FullRow"
+                                              IsSynchronizedWithCurrentItem="False"
+                                              AutoGenerateColumns="False"
+                                              CanUserAddRows="False"
+                                              IsReadOnly="True"
+                                              ScrollViewer.VerticalScrollBarVisibility="Auto">
                                         <DataGrid.Columns>
                                             <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
                                             <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="1.2*"/>
@@ -928,6 +1037,8 @@
                                             <DataGridTextColumn Header="Ср. пинг" Binding="{Binding AveragePing, StringFormat=F2}" Width="0.9*"/>
                                             <DataGridTextColumn Header="Ср. дрожание" Binding="{Binding AverageJitter, StringFormat=F2}" Width="1*"/>
                                             <DataGridTextColumn Header="Ср. потери" Binding="{Binding AverageLoss, StringFormat=F2}" Width="0.9*"/>
+                                            <DataGridTextColumn Header="Ср. загрузка" Binding="{Binding AverageDownloadMbps, StringFormat=F2}" Width="1*"/>
+                                            <DataGridTextColumn Header="Ср. отдача" Binding="{Binding AverageUploadMbps, StringFormat=F2}" Width="1*"/>
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </Border>
