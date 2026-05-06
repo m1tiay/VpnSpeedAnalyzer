@@ -1,4 +1,5 @@
 using System;
+using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using VpnSpeedAnalyzer.Models;
@@ -7,14 +8,18 @@ using VpnSpeedAnalyzer.Services;
 namespace VpnSpeedAnalyzer.Logic
 {
     /// <summary>
-    /// Контроллер, который мониторит изменения IP адреса и запускает тесты скорости
+    /// Контроллер, который мониторит изменения сетевого контура и запускает тесты скорости
     /// </summary>
     public class MonitorController : IDisposable
     {
-        // Пауза между проверками IP адреса (15 секунд).
-        private const int CheckIntervalMs = 15000;
+        // Локальный опрос конфигурации интерфейсов (без внешних HTTP) каждые 400 мс —
+        // реакция на смену VPN/Wi‑Fi быстрее, чем периодический опрос только IP через API.
+        private const int LocalPollIntervalMs = 400;
 
-        // Принудительный замер скорости даже без смены IP — раз в 5 минут.
+        // Сколько миллисекунд новый отпечаток должен оставаться неизменным, чтобы не ловить кратковременные «дёргания» DHCP/интерфейсов.
+        private const int TopologyDebounceMs = 1200;
+
+        // Принудительный замер скорости даже без изменения контура — раз в 5 минут.
         private static readonly TimeSpan ForcedRunInterval = TimeSpan.FromMinutes(5);
 
         private readonly IIpInfoService _ipService;
@@ -23,11 +28,20 @@ namespace VpnSpeedAnalyzer.Logic
         private CancellationTokenSource? _cts;
         private CancellationTokenSource? _delayCts;
         private Task? _loopTask;
-        private IpInfo? _lastIp;
+
+        /// <summary>Принятый «стабильный» снимок контура после старта или последней подтверждённой смены.</summary>
+        private string? _acceptedFingerprint;
+
+        private string? _debounceCandidateFingerprint;
+        private DateTime _debounceCandidateSince;
+
         private DateTime _lastSpeedtestUtc = DateTime.MinValue;
+
         private bool _forceRunRequested;
 
         public event EventHandler<SpeedtestResult>? NewResult;
+
+        /// <summary>Обновление IP/гео после замера или при запросе (не каждый тик локального цикла).</summary>
         public event EventHandler<IpInfo>? IpInfoUpdated;
         public event EventHandler<string>? StatusMessage;
 
@@ -51,6 +65,9 @@ namespace VpnSpeedAnalyzer.Logic
                 return;
             }
 
+            _acceptedFingerprint = null;
+            _debounceCandidateFingerprint = null;
+            NetworkChange.NetworkAddressChanged += OnNetworkTopologyHint;
             _cts = new CancellationTokenSource();
             _loopTask = LoopAsync(_cts.Token);
         }
@@ -65,6 +82,8 @@ namespace VpnSpeedAnalyzer.Logic
                 Logger.Write("Монитор не работает");
                 return;
             }
+
+            NetworkChange.NetworkAddressChanged -= OnNetworkTopologyHint;
 
             var cts = _cts;
             _cts = null;
@@ -114,6 +133,52 @@ namespace VpnSpeedAnalyzer.Logic
         }
 
         /// <summary>
+        /// Событие ОС об изменении адресов: ускоряем следующее сравнение отпечатка.
+        /// </summary>
+        private void OnNetworkTopologyHint(object? sender, EventArgs e)
+        {
+            try
+            {
+                _delayCts?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        /// <summary>
+        /// True, если отпечаток отличается от принятого и не менялся не меньше <see cref="TopologyDebounceMs"/> мс.
+        /// </summary>
+        private bool TryConfirmTopologyChange(string fingerprint)
+        {
+            if (_acceptedFingerprint == null)
+                return false;
+
+            if (string.Equals(fingerprint, _acceptedFingerprint, StringComparison.Ordinal))
+            {
+                _debounceCandidateFingerprint = null;
+                return false;
+            }
+
+            if (!string.Equals(fingerprint, _debounceCandidateFingerprint, StringComparison.Ordinal))
+            {
+                _debounceCandidateFingerprint = fingerprint;
+                _debounceCandidateSince = DateTime.UtcNow;
+                Logger.Write("Сеть: новый отпечаток контура — ждём стабилизацию перед замером");
+                return false;
+            }
+
+            var waitedMs = (DateTime.UtcNow - _debounceCandidateSince).TotalMilliseconds;
+            if (waitedMs < TopologyDebounceMs)
+                return false;
+
+            Logger.Write($"Сеть: смена контура подтверждена после {waitedMs:F0} мс стабильного отпечатка");
+            _acceptedFingerprint = fingerprint;
+            _debounceCandidateFingerprint = null;
+            return true;
+        }
+
+        /// <summary>
         /// Основной цикл мониторинга
         /// </summary>
         private async Task LoopAsync(CancellationToken token)
@@ -124,63 +189,89 @@ namespace VpnSpeedAnalyzer.Logic
                 {
                     try
                     {
-                        StatusMessage?.Invoke(this, "CHECKING: Идет проверка IP и состояния соединения...");
-                        Logger.Write("Проверяем IP адрес...");
-                        var info = await _ipService.GetCurrentAsync()
-                            .ConfigureAwait(false);
-                        Logger.Write("Ответ IP API: " + (info?.Ip ?? "NULL"));
+                        var fingerprint = LocalNetworkFingerprint.Compute();
 
-                        if (info != null)
+                        var topologyConfirmed = TryConfirmTopologyChange(fingerprint);
+
+                        // Первый тик ещё не знает базовый контур — фиксируем текущий снимок без ожидания debounce.
+                        _acceptedFingerprint ??= fingerprint;
+
+                        var sinceLastMeasurement = DateTime.UtcNow - _lastSpeedtestUtc;
+
+                        var intervalElapsed = sinceLastMeasurement >= ForcedRunInterval;
+
+                        var firstMeasurement = _lastSpeedtestUtc == DateTime.MinValue;
+
+                        var shouldMeasure = firstMeasurement || topologyConfirmed || intervalElapsed || _forceRunRequested;
+
+                        Logger.Write(
+                            $"Тик монитора: topologyConfirmed={topologyConfirmed}, первыйЗамер={firstMeasurement}, " +
+                            $"прошло={sinceLastMeasurement.TotalSeconds:F0}s, intervalElapsed={intervalElapsed}, force={_forceRunRequested}, run={shouldMeasure}");
+
+                        if (shouldMeasure)
                         {
-                            IpInfoUpdated?.Invoke(this, info);
-                            var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName) ? "unknown" : _ipService.LastSourceName;
-                            StatusMessage?.Invoke(this, $"INFO: Источник IP: {sourceName}");
-
-                            var ipChanged = _lastIp == null || info.Ip != _lastIp.Ip;
-                            var intervalElapsed = (DateTime.UtcNow - _lastSpeedtestUtc) >= ForcedRunInterval;
-                            var shouldMeasure = ipChanged || intervalElapsed || _forceRunRequested;
-
-                            if (shouldMeasure)
-                            {
-                                var reasonText = _forceRunRequested
-                                    ? "по запросу пользователя"
-                                    : ipChanged
-                                        ? "обнаружена смена IP"
+                            var reasonText = _forceRunRequested
+                                ? "по запросу"
+                                : topologyConfirmed
+                                    ? "смена сетевого контура"
+                                    : firstMeasurement
+                                        ? "старт мониторинга"
                                         : "по таймеру";
 
-                                StatusMessage?.Invoke(this, $"CHECKING: Запускаем speedtest ({reasonText})...");
-                                Logger.Write($"Запускаем тест скорости: {reasonText}");
-                                _forceRunRequested = false;
+                            StatusMessage?.Invoke(this, $"CHECK:Замер скорости ({reasonText})");
+                            Logger.Write($"Запускаем тест скорости: {reasonText}");
+                            _forceRunRequested = false;
 
-                                var result = await _speedtest.RunAsync()
-                                    .ConfigureAwait(false);
-                                _lastSpeedtestUtc = DateTime.UtcNow;
-                                Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
+                            var result = await _speedtest.RunAsync().ConfigureAwait(false);
+                            _lastSpeedtestUtc = DateTime.UtcNow;
 
-                                if (result != null)
+                            Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
+
+                            if (result != null)
+                            {
+                                // Обогащаем результат геоданными (один HTTP на замер — с текущим выходом в интернет после VPN).
+                                var geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
+
+                                MergeGeoIntoResult(result, geo);
+
+                                var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName)
+                                    ? "unknown"
+                                    : _ipService.LastSourceName;
+
+                                if (geo != null)
                                 {
-                                    result.Ip = info.Ip;
-                                    result.Country = string.IsNullOrWhiteSpace(info.CountryName) ? result.Country : info.CountryName;
-                                    result.CountryCode = info.CountryCode;
-                                    result.Asn = info.Asn;
-                                    NewResult?.Invoke(this, result);
+                                    Logger.Write($"Геоданные к замеру: источник={sourceName}, IP(API)={geo.Ip}");
+                                    IpInfoUpdated?.Invoke(this, geo);
                                 }
-                                else
+                                else if (!string.IsNullOrWhiteSpace(result.Ip))
                                 {
-                                    var reason = _speedtest.LastFailureReason ?? "Неизвестная ошибка speedtest";
-                                    StatusMessage?.Invoke(this, $"ERROR: Ошибка замера: {reason}");
+                                    IpInfoUpdated?.Invoke(
+                                        this,
+                                        new IpInfo
+                                        {
+                                            Ip = result.Ip,
+                                            CountryName = string.Empty,
+                                            CountryCode = result.CountryCode,
+                                            Asn = result.Asn
+                                        });
+
+                                    Logger.Write("Гео API недоступен — в UI передан только IP из speedtest");
                                 }
+
+                                NewResult?.Invoke(this, result);
                             }
                             else
                             {
-                                Logger.Write("Замер скорости пропущен: IP не менялся и таймер не истёк");
-                                StatusMessage?.Invoke(this, $"INFO: Идет проверка через {sourceName}, изменений IP не обнаружено");
+                                var reason = _speedtest.LastFailureReason ?? "Неизвестная ошибка speedtest";
+                                StatusMessage?.Invoke(this, $"ERROR:Ошибка замера: {reason}");
                             }
-
-                            _lastIp = info;
+                        }
+                        else
+                        {
+                            Logger.Write("Замер пропущен: контур стабилен и таймер не истёк");
                         }
 
-                        await DelayAsync(CheckIntervalMs, token).ConfigureAwait(false);
+                        await DelayAsync(LocalPollIntervalMs, token).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
                     {
@@ -189,15 +280,16 @@ namespace VpnSpeedAnalyzer.Logic
                             Logger.Write("Monitor loop cancelled");
                             break;
                         }
-                        // Иначе нас просто разбудили через RequestImmediateRun — продолжаем цикл.
+
+                        // Иначе нас просто разбудили через RequestImmediateRun или NetworkAddressChanged — продолжаем цикл.
                     }
                     catch (Exception ex)
                     {
                         Logger.Write($"Monitor loop error: {ex.GetType().Name}: {ex.Message}");
-                        StatusMessage?.Invoke(this, $"ERROR: Сбой цикла мониторинга: {ex.Message}");
+                        StatusMessage?.Invoke(this, $"ERROR:Сбой мониторинга: {ex.Message}");
                         try
                         {
-                            await DelayAsync(CheckIntervalMs, token).ConfigureAwait(false);
+                            await DelayAsync(LocalPollIntervalMs, token).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (token.IsCancellationRequested)
                         {
@@ -210,6 +302,29 @@ namespace VpnSpeedAnalyzer.Logic
             {
                 Logger.Write("Monitor loop ended");
             }
+        }
+
+        /// <summary>
+        /// Публичный IP из speedtest; страна и ASN из геосервиса (если ответ есть).
+        /// </summary>
+        private static void MergeGeoIntoResult(SpeedtestResult result, IpInfo? geo)
+        {
+            if (geo == null)
+                return;
+
+            if (!string.IsNullOrWhiteSpace(geo.Ip)
+                && !string.Equals(geo.Ip, result.Ip, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.Write($"Несовпадение egress IP: speedtest={result.Ip}, геосервис={geo.Ip} (в таблице оставляем speedtest)");
+            }
+
+            if (!string.IsNullOrWhiteSpace(geo.CountryName))
+                result.Country = geo.CountryName;
+
+            result.CountryCode = string.IsNullOrWhiteSpace(geo.CountryCode) ? result.CountryCode : geo.CountryCode;
+
+            if (!string.IsNullOrWhiteSpace(geo.Asn))
+                result.Asn = geo.Asn;
         }
 
         private async Task DelayAsync(int milliseconds, CancellationToken token)

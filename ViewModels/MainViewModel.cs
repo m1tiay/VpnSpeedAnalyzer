@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using VpnSpeedAnalyzer.Logic;
 using VpnSpeedAnalyzer.Models;
@@ -29,8 +30,24 @@ namespace VpnSpeedAnalyzer
         private string _currentIp = "";
         private string _currentCountry = "";
         private string _currentAsn = "";
+        // Единая палитра статуса, повторяет легенду в UI.
+        private const string StatusColorOk = "#59D9B7";
+        private const string StatusColorCheck = "#F6C453";
+        private const string StatusColorWait = "#A8B0D9";
+        private const string StatusColorError = "#FF7AA2";
+
+        // Полный период до следующего автоматического замера.
+        private static readonly TimeSpan ProgressFullPeriod = TimeSpan.FromMinutes(5);
+
         private string _statusText = "Остановлено";
-        private string _statusColor = "#A8B0D9";
+        private string _statusColor = StatusColorWait;
+
+        private readonly DispatcherTimer _progressTimer;
+        private DateTime _lastSuccessUtc;
+        private bool _progressVisible;
+        private bool _progressIsIndeterminate;
+        private double _progressValue;
+        private string _progressColor = StatusColorWait;
         private string _selectedScoringProfile = ScoringService.ProfileUniversal;
         private string _recommendationText = "Рекомендация появится после первого успешного замера";
         private string _ratingSummaryText = "Недостаточно данных для аналитики";
@@ -254,6 +271,70 @@ namespace VpnSpeedAnalyzer
         public double AveragePing => _averagePing;
 
         /// <summary>
+        /// Видим ли индикатор прогресса в верхней панели.
+        /// </summary>
+        public bool ProgressVisible
+        {
+            get => _progressVisible;
+            private set
+            {
+                if (_progressVisible != value)
+                {
+                    _progressVisible = value;
+                    NotifyPropertyChanged(nameof(ProgressVisible));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Если true — индикатор работает в режиме «бегущего блика» (идёт замер).
+        /// </summary>
+        public bool ProgressIsIndeterminate
+        {
+            get => _progressIsIndeterminate;
+            private set
+            {
+                if (_progressIsIndeterminate != value)
+                {
+                    _progressIsIndeterminate = value;
+                    NotifyPropertyChanged(nameof(ProgressIsIndeterminate));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Заполненность шкалы 0..100 при отсчёте до следующего замера.
+        /// </summary>
+        public double ProgressValue
+        {
+            get => _progressValue;
+            private set
+            {
+                if (Math.Abs(_progressValue - value) > 0.05)
+                {
+                    _progressValue = value;
+                    NotifyPropertyChanged(nameof(ProgressValue));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Цвет индикатора, повторяет цвет статуса.
+        /// </summary>
+        public string ProgressColor
+        {
+            get => _progressColor;
+            private set
+            {
+                if (_progressColor != value)
+                {
+                    _progressColor = value;
+                    NotifyPropertyChanged(nameof(ProgressColor));
+                }
+            }
+        }
+
+        /// <summary>
         /// Выбранная запись в таблице результатов
         /// </summary>
         public ResultEntry? SelectedResult
@@ -344,6 +425,9 @@ namespace VpnSpeedAnalyzer
                 RunNowCommand = new RelayCommand(_ => RunNow(), _ => _isMonitoring);
                 Logger.Write("ViewModel: Команды ОК");
 
+                _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                _progressTimer.Tick += (_, _) => UpdateProgressTick();
+
                 Logger.Write("Основная Виев-Модель инициализирована");
             }
             catch (Exception ex)
@@ -382,16 +466,15 @@ namespace VpnSpeedAnalyzer
                     UpdateRecommendation();
                     UpdateTopHosts();
                     UpdateHostAnalytics();
-                    StatusText = $"✓ Последняя проверка: {DateTime.Now:HH:mm:ss}";
-                    StatusColor = "#59D9B7";
+                    _lastSuccessUtc = DateTime.UtcNow;
+                    SetStatus(StatusKind.Ok, $"Последний замер: {DateTime.Now:HH:mm:ss}");
 
                     NewResultArrived?.Invoke(this, r);
                 }
                 catch (Exception ex)
                 {
                     Logger.Write($"Monitor_NewResult error: {ex.Message}");
-                    StatusText = "Ошибка обновления результата";
-                    StatusColor = "#FF7AA2";
+                    SetStatus(StatusKind.Error, "Ошибка обновления результата");
                 }
             });
         }
@@ -410,34 +493,158 @@ namespace VpnSpeedAnalyzer
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                const string errorPrefix = "ERROR:";
-                const string checkingPrefix = "CHECKING:";
-                const string infoPrefix = "INFO:";
-
-                if (message.StartsWith(errorPrefix, StringComparison.Ordinal))
+                if (TryParseStatus(message, out var kind, out var text))
                 {
-                    StatusText = message.Substring(errorPrefix.Length).Trim();
-                    StatusColor = "#FF7AA2";
+                    SetStatus(kind, text);
                     return;
                 }
 
-                if (message.StartsWith(checkingPrefix, StringComparison.Ordinal))
-                {
-                    StatusText = message.Substring(checkingPrefix.Length).Trim();
-                    StatusColor = "#F6C453";
-                    return;
-                }
-
-                if (message.StartsWith(infoPrefix, StringComparison.Ordinal))
-                {
-                    StatusText = message.Substring(infoPrefix.Length).Trim();
-                    StatusColor = "#A8B0D9";
-                    return;
-                }
-
-                StatusText = message;
-                StatusColor = "#A8B0D9";
+                // Защитный путь на случай неизвестного формата.
+                SetStatus(StatusKind.Wait, message);
             });
+        }
+
+        /// <summary>
+        /// Разбирает сообщение вида "KIND:текст" в типизированный статус.
+        /// Поддерживаемые префиксы: OK, CHECK, WAIT, ERROR.
+        /// </summary>
+        private static bool TryParseStatus(string message, out StatusKind kind, out string text)
+        {
+            kind = StatusKind.Wait;
+            text = string.Empty;
+
+            if (string.IsNullOrEmpty(message))
+                return false;
+
+            var separatorIndex = message.IndexOf(':');
+            if (separatorIndex <= 0)
+                return false;
+
+            var prefix = message.Substring(0, separatorIndex).Trim().ToUpperInvariant();
+            var body = message.Substring(separatorIndex + 1).Trim();
+
+            switch (prefix)
+            {
+                case "OK":
+                    kind = StatusKind.Ok;
+                    text = body;
+                    return true;
+                case "CHECK":
+                case "CHECKING":
+                    kind = StatusKind.Check;
+                    text = body;
+                    return true;
+                case "WAIT":
+                case "INFO":
+                    kind = StatusKind.Wait;
+                    text = body;
+                    return true;
+                case "ERROR":
+                    kind = StatusKind.Error;
+                    text = body;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private void SetStatus(StatusKind kind, string text)
+        {
+            StatusText = text;
+            StatusColor = kind switch
+            {
+                StatusKind.Ok => StatusColorOk,
+                StatusKind.Check => StatusColorCheck,
+                StatusKind.Error => StatusColorError,
+                _ => StatusColorWait
+            };
+
+            UpdateProgressForStatus(kind);
+        }
+
+        private void UpdateProgressForStatus(StatusKind kind)
+        {
+            ProgressColor = kind switch
+            {
+                StatusKind.Ok => StatusColorOk,
+                StatusKind.Check => StatusColorCheck,
+                StatusKind.Error => StatusColorError,
+                _ => StatusColorWait
+            };
+
+            switch (kind)
+            {
+                case StatusKind.Wait:
+                    ProgressIsIndeterminate = false;
+                    ProgressValue = 0;
+                    ProgressVisible = false;
+                    StopProgressTimer();
+                    break;
+
+                case StatusKind.Check:
+                    ProgressIsIndeterminate = true;
+                    ProgressValue = 0;
+                    ProgressVisible = true;
+                    StopProgressTimer();
+                    break;
+
+                case StatusKind.Ok:
+                    ProgressIsIndeterminate = false;
+                    ProgressVisible = true;
+                    if (_lastSuccessUtc == default)
+                        _lastSuccessUtc = DateTime.UtcNow;
+                    UpdateProgressTick();
+                    StartProgressTimer();
+                    break;
+
+                case StatusKind.Error:
+                    ProgressIsIndeterminate = false;
+                    ProgressValue = 100;
+                    ProgressVisible = true;
+                    StopProgressTimer();
+                    break;
+            }
+        }
+
+        private void StartProgressTimer()
+        {
+            if (!_progressTimer.IsEnabled)
+                _progressTimer.Start();
+        }
+
+        private void StopProgressTimer()
+        {
+            if (_progressTimer.IsEnabled)
+                _progressTimer.Stop();
+        }
+
+        /// <summary>
+        /// Считает процент пройденного времени между замерами и обновляет индикатор.
+        /// </summary>
+        private void UpdateProgressTick()
+        {
+            if (!ProgressVisible || ProgressIsIndeterminate)
+                return;
+
+            if (_lastSuccessUtc == default)
+            {
+                ProgressValue = 0;
+                return;
+            }
+
+            var elapsed = DateTime.UtcNow - _lastSuccessUtc;
+            var ratio = elapsed.TotalSeconds / ProgressFullPeriod.TotalSeconds;
+            if (ratio < 0) ratio = 0;
+            if (ratio > 1) ratio = 1;
+            ProgressValue = ratio * 100.0;
+        }
+
+        private enum StatusKind
+        {
+            Wait,
+            Check,
+            Ok,
+            Error
         }
 
         public void Start()
@@ -451,8 +658,7 @@ namespace VpnSpeedAnalyzer
                 }
 
                 _isMonitoring = true;
-                StatusText = "Мониторинг запущен";
-                StatusColor = "#59D9B7";
+                SetStatus(StatusKind.Ok, "Мониторинг запущен");
                 _monitor.Start();
                 NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
                 RunNowCommand.RaiseCanExecuteChanged();
@@ -461,9 +667,8 @@ namespace VpnSpeedAnalyzer
             catch (Exception ex)
             {
                 Logger.Write($"Start error: {ex.Message}");
-                StatusText = "Ошибка запуска";
-                StatusColor = "#FF7AA2";
-                MessageBox.Show($"Error starting monitor: {ex.Message}");
+                SetStatus(StatusKind.Error, "Ошибка запуска");
+                MessageBox.Show($"Не удалось запустить мониторинг: {ex.Message}", "VPN Speed Analyzer");
             }
         }
 
@@ -478,8 +683,7 @@ namespace VpnSpeedAnalyzer
                 }
 
                 _isMonitoring = false;
-                StatusText = "Остановлено";
-                StatusColor = "#A8B0D9";
+                SetStatus(StatusKind.Wait, "Остановлено");
                 _monitor.Stop();
                 NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
                 RunNowCommand.RaiseCanExecuteChanged();
@@ -488,8 +692,7 @@ namespace VpnSpeedAnalyzer
             catch (Exception ex)
             {
                 Logger.Write($"Stop error: {ex.Message}");
-                StatusText = "Ошибка остановки";
-                StatusColor = "#FF7AA2";
+                SetStatus(StatusKind.Error, "Ошибка остановки");
             }
         }
 
@@ -510,8 +713,7 @@ namespace VpnSpeedAnalyzer
                 return;
 
             _monitor.RequestImmediateRun();
-            StatusText = "Запрошен внеплановый замер";
-            StatusColor = "#F6C453";
+            SetStatus(StatusKind.Check, "Замер скорости (по запросу)");
         }
 
         public void ExportCsv()
