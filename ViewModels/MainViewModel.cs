@@ -1,9 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using VpnSpeedAnalyzer.Logic;
 using VpnSpeedAnalyzer.Models;
 using VpnSpeedAnalyzer.Services;
@@ -49,16 +51,32 @@ namespace VpnSpeedAnalyzer
         {
             get
             {
-                var longestProfileLength = 0;
+                var maxTextWidth = 0.0;
+                var pixelsPerDip = 1.0;
+                if (Application.Current?.MainWindow != null)
+                    pixelsPerDip = VisualTreeHelper.GetDpi(Application.Current.MainWindow).PixelsPerDip;
+
                 foreach (var profile in ScoringProfiles)
                 {
-                    if (!string.IsNullOrEmpty(profile) && profile.Length > longestProfileLength)
-                        longestProfileLength = profile.Length;
+                    if (string.IsNullOrWhiteSpace(profile))
+                        continue;
+
+                    var formattedText = new FormattedText(
+                        profile,
+                        CultureInfo.CurrentCulture,
+                        FlowDirection.LeftToRight,
+                        new Typeface("Segoe UI"),
+                        12,
+                        Brushes.Transparent,
+                        pixelsPerDip);
+
+                    if (formattedText.Width > maxTextWidth)
+                        maxTextWidth = formattedText.Width;
                 }
 
-                // Примерная ширина текста + внутренние отступы и зона стрелки.
-                var calculatedWidth = longestProfileLength * 9 + 56;
-                return Math.Max(120, calculatedWidth);
+                // Текст + внутренние отступы кнопки.
+                var calculatedWidth = maxTextWidth + 28;
+                return Math.Max(120, Math.Ceiling(calculatedWidth));
             }
         }
 

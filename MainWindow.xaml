@@ -146,10 +146,10 @@
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="30"/>
+                                        <ColumnDefinition Width="0"/>
                                     </Grid.ColumnDefinitions>
                                     <ContentPresenter Grid.Column="0"
-                                                      Margin="10,0,34,0"
+                                                      Margin="10,0,10,0"
                                                       VerticalAlignment="Center"
                                                       HorizontalAlignment="Left"
                                                       IsHitTestVisible="False"
@@ -186,6 +186,7 @@
                                               HorizontalAlignment="Right"
                                               VerticalAlignment="Center"
                                               Margin="0,0,10,0"
+                                              Opacity="0"
                                               Fill="{StaticResource TextBrush}"
                                               Data="M 0 0 L 10 0 L 5 6 Z"/>
                                     </ToggleButton>
