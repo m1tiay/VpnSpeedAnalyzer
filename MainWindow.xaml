@@ -323,8 +323,8 @@
 
         <Style TargetType="TabControl">
             <Setter Property="Background" Value="{StaticResource BgBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource PanelSecondaryBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -335,21 +335,16 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <Border Grid.RowSpan="2"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="10"/>
                             <Border Grid.Row="0"
                                     Background="Transparent"
-                                    Padding="8,8,8,6">
+                                    Padding="0,0,0,8">
                                 <TabPanel x:Name="HeaderPanel"
                                           IsItemsHost="True"
                                           Background="Transparent"/>
                             </Border>
                             <Border Grid.Row="1"
                                     Background="Transparent"
-                                    Padding="8,0,8,8">
+                                    Padding="0">
                                 <ContentPresenter x:Name="PART_SelectedContentHost"
                                                   Margin="0"
                                                   KeyboardNavigation.TabIndex="2"
@@ -365,7 +360,7 @@
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="Padding" Value="14,7"/>
-            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
             <Setter Property="Panel.ZIndex" Value="0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -605,7 +600,6 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                    <TextBlock Margin="0,8,0,0" Text="{Binding RecommendationText}" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" FontSize="11"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -618,7 +612,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Рейтинг хостов">
+            <TabItem Header="Аналитика">
                 <Grid Margin="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -628,8 +622,8 @@
                     <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
                         <DockPanel>
                             <StackPanel>
-                                <TextBlock Text="Рейтинг хостов" Foreground="{StaticResource TextBrush}" FontWeight="Bold" FontSize="18"/>
-                                <TextBlock Text="Топ узлов по текущему профилю D.Q.S" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"/>
+                                <TextBlock Text="Аналитика" Foreground="{StaticResource TextBrush}" FontWeight="Bold" FontSize="18"/>
+                                <TextBlock Text="Сводный анализ хостов по текущему профилю D.Q.S" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"/>
                             </StackPanel>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="16,0,8,0"/>
