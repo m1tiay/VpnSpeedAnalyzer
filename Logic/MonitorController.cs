@@ -36,7 +36,7 @@ namespace VpnSpeedAnalyzer.Logic
         private Task? _loopTask;
 
         private string? _lastVpnTransportFingerprint;
-        private string? _vpnDebounceCandidateFingerprint;
+        private bool _vpnDebounceChangeInProgress;
         private DateTime _vpnDebounceCandidateSince;
         private int _vpnTopProcessId;
         private string _vpnTopProcessLabel = "процесс: —";
@@ -77,7 +77,7 @@ namespace VpnSpeedAnalyzer.Logic
             }
 
             _lastVpnTransportFingerprint = null;
-            _vpnDebounceCandidateFingerprint = null;
+            _vpnDebounceChangeInProgress = false;
             _vpnTopProcessId = 0;
             _vpnTopProcessLabel = "процесс: —";
             _isMeasurementInFlight = false;
@@ -98,7 +98,7 @@ namespace VpnSpeedAnalyzer.Logic
             }
 
             _lastVpnTransportFingerprint = null;
-            _vpnDebounceCandidateFingerprint = null;
+            _vpnDebounceChangeInProgress = false;
             _vpnTopProcessId = 0;
             _vpnTopProcessLabel = "процесс: —";
             _isMeasurementInFlight = false;
@@ -162,27 +162,30 @@ namespace VpnSpeedAnalyzer.Logic
             if (string.IsNullOrWhiteSpace(_lastVpnTransportFingerprint))
             {
                 _lastVpnTransportFingerprint = fingerprint;
-                _vpnDebounceCandidateFingerprint = null;
+                _vpnDebounceChangeInProgress = false;
                 return false;
             }
 
             if (string.Equals(fingerprint, _lastVpnTransportFingerprint, StringComparison.Ordinal))
             {
-                _vpnDebounceCandidateFingerprint = null;
+                _vpnDebounceChangeInProgress = false;
                 return false;
             }
 
             var delta = CountEndpointDelta(_lastVpnTransportFingerprint, fingerprint);
             if (delta < VpnTransportMinDeltaEndpoints)
             {
-                _vpnDebounceCandidateFingerprint = null;
+                _vpnDebounceChangeInProgress = false;
                 Logger.Write($"VPN transport: изменение слишком мало (delta={delta}), игнорируем");
                 return false;
             }
 
-            if (!string.Equals(fingerprint, _vpnDebounceCandidateFingerprint, StringComparison.Ordinal))
+            // Подтверждаем не «одинаковый снимок», а устойчивое состояние «delta >= порога».
+            // Это важно для клиентов, где при реальной смене хоста endpoint'ы продолжают
+            // достраиваться несколько секунд и fingerprint меняется на каждом тике.
+            if (!_vpnDebounceChangeInProgress)
             {
-                _vpnDebounceCandidateFingerprint = fingerprint;
+                _vpnDebounceChangeInProgress = true;
                 _vpnDebounceCandidateSince = DateTime.UtcNow;
                 Logger.Write($"VPN transport: значимое изменение (delta={delta}) — ждём стабилизацию");
                 return false;
@@ -193,7 +196,7 @@ namespace VpnSpeedAnalyzer.Logic
                 return false;
 
             _lastVpnTransportFingerprint = fingerprint;
-            _vpnDebounceCandidateFingerprint = null;
+            _vpnDebounceChangeInProgress = false;
             Logger.Write($"VPN transport: смена подтверждена после {waitedMs:F0} мс стабильности");
             return true;
         }
@@ -411,7 +414,7 @@ namespace VpnSpeedAnalyzer.Logic
                         ? _lastVpnTransportFingerprint
                         : vpnSnapshot.Fingerprint;
                 }
-                _vpnDebounceCandidateFingerprint = null;
+                _vpnDebounceChangeInProgress = false;
             }
             catch (Exception ex)
             {
