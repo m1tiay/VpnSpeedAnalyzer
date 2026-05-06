@@ -752,9 +752,25 @@
             </TabItem>
         </TabControl>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-            <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Margin="0,0,8,0" Command="{Binding ToggleMonitoringCommand}"/>
-            <Button Content="{Binding ActiveExportButtonText}" Width="150" Margin="0" Command="{Binding ActiveExportCommand}"/>
-        </StackPanel>
+        <Grid Grid.Row="2" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Margin="0,0,8,0" Command="{Binding ToggleMonitoringCommand}"/>
+                <Button Content="{Binding ActiveExportButtonText}" Width="150" Margin="0" Command="{Binding ActiveExportCommand}"/>
+            </StackPanel>
+
+            <TextBlock Grid.Column="2"
+                       Text="created by daver"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       Foreground="{StaticResource MutedTextBrush}"
+                       Opacity="0.85"
+                       FontSize="11"/>
+        </Grid>
     </Grid>
 </Window>
