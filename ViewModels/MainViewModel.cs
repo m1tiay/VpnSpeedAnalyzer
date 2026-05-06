@@ -65,34 +65,26 @@ namespace VpnSpeedAnalyzer
         private string _cmpDqsLeaderText = "—";
         private string _cmpDqsDeltaText = "";
         private Brush _cmpDqsDeltaBrush = CmpBrushNeutral;
-        private string _cmpDqsCompareText = "— | —";
 
         private string _cmpPingLeaderText = "—";
         private string _cmpPingDeltaText = "";
         private Brush _cmpPingDeltaBrush = CmpBrushNeutral;
-        private string _cmpPingCompareText = "— | —";
 
         private string _cmpJitterLeaderText = "—";
         private string _cmpJitterDeltaText = "";
         private Brush _cmpJitterDeltaBrush = CmpBrushNeutral;
-        private string _cmpJitterCompareText = "— | —";
 
         private string _cmpLossLeaderText = "—";
         private string _cmpLossDeltaText = "";
         private Brush _cmpLossDeltaBrush = CmpBrushNeutral;
-        private string _cmpLossCompareText = "— | —";
 
         private string _cmpDownLeaderText = "—";
         private string _cmpDownDeltaText = "";
         private Brush _cmpDownDeltaBrush = CmpBrushNeutral;
-        private string _cmpDownCompareText = "— | —";
 
         private string _cmpUpLeaderText = "—";
         private string _cmpUpDeltaText = "";
         private Brush _cmpUpDeltaBrush = CmpBrushNeutral;
-        private string _cmpUpCompareText = "— | —";
-
-        private bool _cmpShowDelta;
 
         private ResultEntry? _selectedResult;
         private bool _isMonitoring;
@@ -322,38 +314,29 @@ namespace VpnSpeedAnalyzer
             }
         }
 
-        /// <summary>Показывать строку Δ относительно лидера для выбранной строки.</summary>
-        public bool CmpShowDelta => _cmpShowDelta;
-
         public string CmpDqsLeaderText => _cmpDqsLeaderText;
         public string CmpDqsDeltaText => _cmpDqsDeltaText;
         public Brush CmpDqsDeltaBrush => _cmpDqsDeltaBrush;
-        public string CmpDqsCompareText => _cmpDqsCompareText;
 
         public string CmpPingLeaderText => _cmpPingLeaderText;
         public string CmpPingDeltaText => _cmpPingDeltaText;
         public Brush CmpPingDeltaBrush => _cmpPingDeltaBrush;
-        public string CmpPingCompareText => _cmpPingCompareText;
 
         public string CmpJitterLeaderText => _cmpJitterLeaderText;
         public string CmpJitterDeltaText => _cmpJitterDeltaText;
         public Brush CmpJitterDeltaBrush => _cmpJitterDeltaBrush;
-        public string CmpJitterCompareText => _cmpJitterCompareText;
 
         public string CmpLossLeaderText => _cmpLossLeaderText;
         public string CmpLossDeltaText => _cmpLossDeltaText;
         public Brush CmpLossDeltaBrush => _cmpLossDeltaBrush;
-        public string CmpLossCompareText => _cmpLossCompareText;
 
         public string CmpDownLeaderText => _cmpDownLeaderText;
         public string CmpDownDeltaText => _cmpDownDeltaText;
         public Brush CmpDownDeltaBrush => _cmpDownDeltaBrush;
-        public string CmpDownCompareText => _cmpDownCompareText;
 
         public string CmpUpLeaderText => _cmpUpLeaderText;
         public string CmpUpDeltaText => _cmpUpDeltaText;
         public Brush CmpUpDeltaBrush => _cmpUpDeltaBrush;
-        public string CmpUpCompareText => _cmpUpCompareText;
 
         /// <summary>
         /// Видим ли индикатор прогресса в верхней панели.
@@ -1108,19 +1091,12 @@ namespace VpnSpeedAnalyzer
 
             if (leader == null)
             {
-                _cmpShowDelta = false;
                 _cmpDqsLeaderText = "—";
                 _cmpPingLeaderText = "—";
                 _cmpJitterLeaderText = "—";
                 _cmpLossLeaderText = "—";
                 _cmpDownLeaderText = "—";
                 _cmpUpLeaderText = "—";
-                _cmpDqsCompareText = "— | —";
-                _cmpPingCompareText = "— | —";
-                _cmpJitterCompareText = "— | —";
-                _cmpLossCompareText = "— | —";
-                _cmpDownCompareText = "— | —";
-                _cmpUpCompareText = "— | —";
                 BlankComparisonDeltas();
                 NotifyLeaderComparisonProps();
                 return;
@@ -1134,21 +1110,6 @@ namespace VpnSpeedAnalyzer
             _cmpDownLeaderText = leader.AverageDownloadMbps.ToString("F2", inv);
             _cmpUpLeaderText = leader.AverageUploadMbps.ToString("F2", inv);
 
-            var selectedDqs = sel?.AverageScore.ToString("F2", inv) ?? "—";
-            var selectedPing = sel?.AveragePing.ToString("F2", inv) ?? "—";
-            var selectedJitter = sel?.AverageJitter.ToString("F2", inv) ?? "—";
-            var selectedLoss = sel?.AverageLoss.ToString("F2", inv) ?? "—";
-            var selectedDown = sel?.AverageDownloadMbps.ToString("F2", inv) ?? "—";
-            var selectedUp = sel?.AverageUploadMbps.ToString("F2", inv) ?? "—";
-
-            _cmpDqsCompareText = $"{_cmpDqsLeaderText} | {selectedDqs}";
-            _cmpPingCompareText = $"{_cmpPingLeaderText} | {selectedPing}";
-            _cmpJitterCompareText = $"{_cmpJitterLeaderText} | {selectedJitter}";
-            _cmpLossCompareText = $"{_cmpLossLeaderText} | {selectedLoss}";
-            _cmpDownCompareText = $"{_cmpDownLeaderText} | {selectedDown}";
-            _cmpUpCompareText = $"{_cmpUpLeaderText} | {selectedUp}";
-
-            _cmpShowDelta = sel != null;
             if (sel == null)
             {
                 BlankComparisonDeltas();
@@ -1184,31 +1145,24 @@ namespace VpnSpeedAnalyzer
 
         private void NotifyLeaderComparisonProps()
         {
-            NotifyPropertyChanged(nameof(CmpShowDelta));
             NotifyPropertyChanged(nameof(CmpDqsLeaderText));
             NotifyPropertyChanged(nameof(CmpDqsDeltaText));
             NotifyPropertyChanged(nameof(CmpDqsDeltaBrush));
-            NotifyPropertyChanged(nameof(CmpDqsCompareText));
             NotifyPropertyChanged(nameof(CmpPingLeaderText));
             NotifyPropertyChanged(nameof(CmpPingDeltaText));
             NotifyPropertyChanged(nameof(CmpPingDeltaBrush));
-            NotifyPropertyChanged(nameof(CmpPingCompareText));
             NotifyPropertyChanged(nameof(CmpJitterLeaderText));
             NotifyPropertyChanged(nameof(CmpJitterDeltaText));
             NotifyPropertyChanged(nameof(CmpJitterDeltaBrush));
-            NotifyPropertyChanged(nameof(CmpJitterCompareText));
             NotifyPropertyChanged(nameof(CmpLossLeaderText));
             NotifyPropertyChanged(nameof(CmpLossDeltaText));
             NotifyPropertyChanged(nameof(CmpLossDeltaBrush));
-            NotifyPropertyChanged(nameof(CmpLossCompareText));
             NotifyPropertyChanged(nameof(CmpDownLeaderText));
             NotifyPropertyChanged(nameof(CmpDownDeltaText));
             NotifyPropertyChanged(nameof(CmpDownDeltaBrush));
-            NotifyPropertyChanged(nameof(CmpDownCompareText));
             NotifyPropertyChanged(nameof(CmpUpLeaderText));
             NotifyPropertyChanged(nameof(CmpUpDeltaText));
             NotifyPropertyChanged(nameof(CmpUpDeltaBrush));
-            NotifyPropertyChanged(nameof(CmpUpCompareText));
         }
 
         /// <summary>

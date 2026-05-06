@@ -38,6 +38,8 @@ namespace VpnSpeedAnalyzer.Logic
 
                     if (IPAddress.IsLoopback(remote))
                         continue;
+                    if (IsPrivateOrSpecial(remote))
+                        continue;
 
                     entries.Add($"{remote}:{c.RemoteEndPoint.Port}");
                 }
@@ -77,6 +79,24 @@ namespace VpnSpeedAnalyzer.Logic
             }
 
             return result;
+        }
+
+        private static bool IsPrivateOrSpecial(IPAddress ip)
+        {
+            var b = ip.GetAddressBytes();
+            // 10.0.0.0/8
+            if (b[0] == 10) return true;
+            // 172.16.0.0/12
+            if (b[0] == 172 && b[1] >= 16 && b[1] <= 31) return true;
+            // 192.168.0.0/16
+            if (b[0] == 192 && b[1] == 168) return true;
+            // CGNAT 100.64.0.0/10
+            if (b[0] == 100 && b[1] >= 64 && b[1] <= 127) return true;
+            // Link-local 169.254.0.0/16
+            if (b[0] == 169 && b[1] == 254) return true;
+            // Benchmark/testing 198.18.0.0/15
+            if (b[0] == 198 && (b[1] == 18 || b[1] == 19)) return true;
+            return false;
         }
 
         private static bool LooksLikeVpnInterface(NetworkInterface nic)

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +20,10 @@ namespace VpnSpeedAnalyzer.Logic
 
         // Сколько миллисекунд новый отпечаток должен оставаться неизменным, чтобы не ловить кратковременные «дёргания» DHCP/интерфейсов.
         private const int TopologyDebounceMs = 1200;
+        // Стабилизация fingerprint transport-соединений, чтобы не реагировать на краткие колебания после speedtest.
+        private const int VpnTransportDebounceMs = 2500;
+        // Минимально значимое изменение transport fingerprint (симметричная разница endpoint'ов).
+        private const int VpnTransportMinDeltaEndpoints = 4;
 
         // Принудительный замер скорости даже без изменения контура — раз в 5 минут.
         private static readonly TimeSpan ForcedRunInterval = TimeSpan.FromMinutes(5);
@@ -40,10 +46,13 @@ namespace VpnSpeedAnalyzer.Logic
         private string? _debounceCandidateFingerprint;
         private DateTime _debounceCandidateSince;
         private string? _lastVpnTransportFingerprint;
+        private string? _vpnDebounceCandidateFingerprint;
+        private DateTime _vpnDebounceCandidateSince;
 
         private DateTime _lastSpeedtestUtc = DateTime.MinValue;
 
         private bool _forceRunRequested;
+        private bool _isMeasurementInFlight;
 
         /// <summary>Последний известный egress IP (гео-API), чтобы ловить смену выхода без смены локального отпечатка.</summary>
         private string? _lastSeenEgressIp;
@@ -82,8 +91,10 @@ namespace VpnSpeedAnalyzer.Logic
             _acceptedFingerprint = null;
             _debounceCandidateFingerprint = null;
             _lastVpnTransportFingerprint = null;
+            _vpnDebounceCandidateFingerprint = null;
             _lastSeenEgressIp = null;
             _lastEgressPollUtc = DateTime.MinValue;
+            _isMeasurementInFlight = false;
             NetworkChange.NetworkAddressChanged += OnNetworkTopologyHint;
             _cts = new CancellationTokenSource();
             _loopTask = LoopAsync(_cts.Token);
@@ -105,6 +116,8 @@ namespace VpnSpeedAnalyzer.Logic
             _lastSeenEgressIp = null;
             _lastEgressPollUtc = DateTime.MinValue;
             _lastVpnTransportFingerprint = null;
+            _vpnDebounceCandidateFingerprint = null;
+            _isMeasurementInFlight = false;
 
             var cts = _cts;
             _cts = null;
@@ -158,6 +171,9 @@ namespace VpnSpeedAnalyzer.Logic
         /// </summary>
         private void OnNetworkTopologyHint(object? sender, EventArgs e)
         {
+            if (_isMeasurementInFlight)
+                return;
+
             try
             {
                 _delayCts?.Cancel();
@@ -200,6 +216,75 @@ namespace VpnSpeedAnalyzer.Logic
         }
 
         /// <summary>
+        /// True, если transport fingerprint отличается от последнего принятого и стабилен не меньше <see cref="VpnTransportDebounceMs"/> мс.
+        /// </summary>
+        private bool TryConfirmVpnTransportChange(string fingerprint)
+        {
+            if (string.IsNullOrWhiteSpace(fingerprint))
+                return false;
+
+            if (string.IsNullOrWhiteSpace(_lastVpnTransportFingerprint))
+            {
+                _lastVpnTransportFingerprint = fingerprint;
+                _vpnDebounceCandidateFingerprint = null;
+                return false;
+            }
+
+            if (string.Equals(fingerprint, _lastVpnTransportFingerprint, StringComparison.Ordinal))
+            {
+                _vpnDebounceCandidateFingerprint = null;
+                return false;
+            }
+
+            var delta = CountEndpointDelta(_lastVpnTransportFingerprint, fingerprint);
+            if (delta < VpnTransportMinDeltaEndpoints)
+            {
+                _vpnDebounceCandidateFingerprint = null;
+                Logger.Write($"VPN transport: изменение слишком мало (delta={delta}), игнорируем");
+                return false;
+            }
+
+            if (!string.Equals(fingerprint, _vpnDebounceCandidateFingerprint, StringComparison.Ordinal))
+            {
+                _vpnDebounceCandidateFingerprint = fingerprint;
+                _vpnDebounceCandidateSince = DateTime.UtcNow;
+                Logger.Write($"VPN transport: значимое изменение (delta={delta}) — ждём стабилизацию");
+                return false;
+            }
+
+            var waitedMs = (DateTime.UtcNow - _vpnDebounceCandidateSince).TotalMilliseconds;
+            if (waitedMs < VpnTransportDebounceMs)
+                return false;
+
+            _lastVpnTransportFingerprint = fingerprint;
+            _vpnDebounceCandidateFingerprint = null;
+            Logger.Write($"VPN transport: смена подтверждена после {waitedMs:F0} мс стабильности");
+            return true;
+        }
+
+        private static int CountEndpointDelta(string previous, string current)
+        {
+            var prevSet = SplitFingerprint(previous);
+            var curSet = SplitFingerprint(current);
+
+            var removed = prevSet.Except(curSet, StringComparer.Ordinal).Count();
+            var added = curSet.Except(prevSet, StringComparer.Ordinal).Count();
+            return removed + added;
+        }
+
+        private static HashSet<string> SplitFingerprint(string value)
+        {
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            if (string.IsNullOrWhiteSpace(value))
+                return set;
+
+            foreach (var s in value.Split('|', StringSplitOptions.RemoveEmptyEntries))
+                set.Add(s.Trim());
+
+            return set;
+        }
+
+        /// <summary>
         /// Основной цикл мониторинга
         /// </summary>
         private async Task LoopAsync(CancellationToken token)
@@ -213,19 +298,8 @@ namespace VpnSpeedAnalyzer.Logic
                         var fingerprint = LocalNetworkFingerprint.Compute();
 
                         var topologyConfirmed = TryConfirmTopologyChange(fingerprint);
-                        var vpnTransportChanged = false;
                         var vpnTransportFp = VpnTransportFingerprint.Compute();
-                        if (!string.IsNullOrEmpty(vpnTransportFp))
-                        {
-                            if (!string.IsNullOrEmpty(_lastVpnTransportFingerprint)
-                                && !string.Equals(_lastVpnTransportFingerprint, vpnTransportFp, StringComparison.Ordinal))
-                            {
-                                vpnTransportChanged = true;
-                                Logger.Write("Обнаружена смена VPN transport fingerprint (remote IP:port на туннеле)");
-                            }
-
-                            _lastVpnTransportFingerprint = vpnTransportFp;
-                        }
+                        var vpnTransportChanged = TryConfirmVpnTransportChange(vpnTransportFp);
 
                         // Первый тик ещё не знает базовый контур — фиксируем текущий снимок без ожидания debounce.
                         _acceptedFingerprint ??= fingerprint;
@@ -275,7 +349,7 @@ namespace VpnSpeedAnalyzer.Logic
                         Logger.Write(
                             $"Тик монитора: topologyConfirmed={topologyConfirmed}, egressIpChanged={egressIpChanged}, vpnTransportChanged={vpnTransportChanged}, " +
                             $"первыйЗамер={firstMeasurement}, прошло={sinceLastMeasurement.TotalSeconds:F0}s, " +
-                            $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, run={shouldMeasure}");
+                            $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, inFlight={_isMeasurementInFlight}, run={shouldMeasure}");
 
                         if (shouldMeasure)
                         {
@@ -294,10 +368,20 @@ namespace VpnSpeedAnalyzer.Logic
                             StatusMessage?.Invoke(this, $"CHECK:Замер скорости ({reasonText})");
                             Logger.Write($"Запускаем тест скорости: {reasonText}");
                             _forceRunRequested = false;
+                            _isMeasurementInFlight = true;
 
-                            var speedProgress = new Progress<double>(p => SpeedtestProgress?.Invoke(this, p));
-                            var result = await _speedtest.RunAsync(speedProgress, token).ConfigureAwait(false);
-                            _lastSpeedtestUtc = DateTime.UtcNow;
+                            SpeedtestResult? result;
+                            try
+                            {
+                                var speedProgress = new Progress<double>(p => SpeedtestProgress?.Invoke(this, p));
+                                result = await _speedtest.RunAsync(speedProgress, token).ConfigureAwait(false);
+                                _lastSpeedtestUtc = DateTime.UtcNow;
+                            }
+                            finally
+                            {
+                                _isMeasurementInFlight = false;
+                                RebaselineHostChangeDetectors();
+                            }
 
                             Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
 
@@ -407,6 +491,27 @@ namespace VpnSpeedAnalyzer.Logic
 
             if (!string.IsNullOrWhiteSpace(geo.Asn))
                 result.Asn = geo.Asn;
+        }
+
+        /// <summary>
+        /// После замера принимаем текущую сетевую картину как базовую, чтобы не ловить «хвост» внутренних перестроений.
+        /// </summary>
+        private void RebaselineHostChangeDetectors()
+        {
+            try
+            {
+                var topology = LocalNetworkFingerprint.Compute();
+                _acceptedFingerprint = topology;
+                _debounceCandidateFingerprint = null;
+
+                var vpnFp = VpnTransportFingerprint.Compute();
+                _lastVpnTransportFingerprint = string.IsNullOrWhiteSpace(vpnFp) ? _lastVpnTransportFingerprint : vpnFp;
+                _vpnDebounceCandidateFingerprint = null;
+            }
+            catch (Exception ex)
+            {
+                Logger.Write($"Rebaseline detectors: {ex.Message}");
+            }
         }
 
         private async Task DelayAsync(int milliseconds, CancellationToken token)
