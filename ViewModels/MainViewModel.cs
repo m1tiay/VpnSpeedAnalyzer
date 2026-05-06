@@ -217,10 +217,8 @@ namespace VpnSpeedAnalyzer
         public ICommand ToggleMonitoringCommand { get; }
         public ICommand ExportCsvCommand { get; }
         public ICommand ExportTopHostsCsvCommand { get; }
-        public ICommand ToggleBestOnlyCommand { get; }
 
         public string ToggleMonitoringButtonText => _isMonitoring ? "Стоп" : "Старт";
-        public string ToggleBestOnlyButtonText => _resultsManager.IsBestOnlyMode ? "Все результаты" : "Только лучшие";
 
         public MainViewModel()
         {
@@ -243,6 +241,8 @@ namespace VpnSpeedAnalyzer
                 Logger.Write("ViewModel: Monitor.NewResult подписка");
                 _monitor.NewResult += Monitor_NewResult;
                 Logger.Write("ViewModel: Monitor.NewResult подписана");
+                _monitor.IpInfoUpdated += Monitor_IpInfoUpdated;
+                Logger.Write("ViewModel: Monitor.IpInfoUpdated подписана");
                 _monitor.StatusMessage += Monitor_StatusMessage;
                 Logger.Write("ViewModel: Monitor.StatusMessage подписана");
 
@@ -258,7 +258,6 @@ namespace VpnSpeedAnalyzer
                 ToggleMonitoringCommand = new RelayCommand(_ => ToggleMonitoring());
                 ExportCsvCommand = new RelayCommand(_ => ExportCsv());
                 ExportTopHostsCsvCommand = new RelayCommand(_ => ExportTopHostsCsv());
-                ToggleBestOnlyCommand = new RelayCommand(_ => ToggleBestOnly());
                 Logger.Write("ViewModel: Команды ОК");
 
                 Logger.Write("Основная Виев-Модель инициализирована");
@@ -311,6 +310,16 @@ namespace VpnSpeedAnalyzer
                     StatusText = "Ошибка обновления результата";
                     StatusColor = "#FF7AA2";
                 }
+            });
+        }
+
+        private void Monitor_IpInfoUpdated(object? sender, IpInfo info)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                CurrentIp = info.Ip;
+                CurrentCountry = string.IsNullOrWhiteSpace(info.CountryName) ? CurrentCountry : info.CountryName;
+                CurrentAsn = string.IsNullOrWhiteSpace(info.Asn) ? "N/A" : info.Asn;
             });
         }
 
@@ -396,23 +405,6 @@ namespace VpnSpeedAnalyzer
                 Logger.Write($"Stop error: {ex.Message}");
                 StatusText = "Ошибка остановки";
                 StatusColor = "#FF7AA2";
-            }
-        }
-
-        public void ToggleBestOnly()
-        {
-            try
-            {
-                _resultsManager.ToggleBestOnly();
-                NotifyPropertyChanged(nameof(ToggleBestOnlyButtonText));
-                UpdateRecommendation();
-                UpdateTopHosts();
-                Logger.Write("Best results filter applied");
-            }
-            catch (Exception ex)
-            {
-                Logger.Write($"ToggleBestOnly error: {ex.Message}");
-                MessageBox.Show($"Error applying filter: {ex.Message}");
             }
         }
 
@@ -594,6 +586,14 @@ namespace VpnSpeedAnalyzer
 
         private void UpdateTopHosts()
         {
+            foreach (var entry in Results)
+            {
+                entry.Rank = 0;
+                entry.RankBadge = "";
+                entry.RankMarker = "";
+                entry.RankMarkerColor = "#A8B0D9";
+            }
+
             TopHosts.Clear();
             var rank = 1;
             foreach (var item in _resultsManager.GetTopResults(TopHostsCount))

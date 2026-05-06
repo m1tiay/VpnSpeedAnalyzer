@@ -21,6 +21,7 @@ namespace VpnSpeedAnalyzer.Logic
         private IpInfo? _lastIp;
 
         public event EventHandler<SpeedtestResult>? NewResult;
+        public event EventHandler<IpInfo>? IpInfoUpdated;
         public event EventHandler<string>? StatusMessage;
 
         public MonitorController(IIpInfoService ipService, ISpeedtestService speedtest)
@@ -94,9 +95,13 @@ namespace VpnSpeedAnalyzer.Logic
 
                         if (info != null)
                         {
+                            IpInfoUpdated?.Invoke(this, info);
+                            var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName) ? "не определен" : _ipService.LastSourceName;
+                            StatusMessage?.Invoke(this, $"INFO: Источник IP: {sourceName}");
+
                             if (_lastIp == null || info.Ip != _lastIp.Ip)
                             {
-                                StatusMessage?.Invoke(this, "CHECKING: Идет проверка канала, запускаем speedtest...");
+                                StatusMessage?.Invoke(this, $"CHECKING: IP обновлен через {sourceName}, запускаем speedtest...");
                                 Logger.Write("Ип-адрес изменился, запускаем тест скорости...");
                                 var result = await _speedtest.RunAsync()
                                     .ConfigureAwait(false);
@@ -119,7 +124,7 @@ namespace VpnSpeedAnalyzer.Logic
                             else
                             {
                                 Logger.Write("Ип-адрес не изменился, пропускаем тест скорости");
-                                StatusMessage?.Invoke(this, "INFO: Идет проверка, изменений IP не обнаружено");
+                                StatusMessage?.Invoke(this, $"INFO: Идет проверка через {sourceName}, изменений IP не обнаружено");
                             }
 
                             _lastIp = info;

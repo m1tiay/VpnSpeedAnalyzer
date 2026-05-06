@@ -461,7 +461,49 @@
 
                             <Border Grid.Column="0" CornerRadius="8" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" ClipToBounds="True">
                                 <DataGrid ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult}" AutoGenerateColumns="False" CanUserAddRows="False" FontSize="12">
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Rank}" Value="1"/>
+                                                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Background" Value="#3B2F10"/>
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                </MultiDataTrigger>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Rank}" Value="2"/>
+                                                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Background" Value="#2D3440"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </MultiDataTrigger>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Rank}" Value="3"/>
+                                                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Background" Value="#3A2A24"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.RowStyle>
                                     <DataGrid.Columns>
+                                        <DataGridTemplateColumn Header="" Width="0.35*">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding RankMarker}"
+                                                               Foreground="{Binding RankMarkerColor}"
+                                                               FontSize="15"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Топ" Binding="{Binding RankBadge}" Width="0.5*"/>
                                         <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
                                         <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
                                         <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score}" Width="0.8*"/>
@@ -520,7 +562,6 @@
                     <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
                         <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Command="{Binding ToggleMonitoringCommand}"/>
                         <Button Content="Экспорт CSV" Width="140" Command="{Binding ExportCsvCommand}"/>
-                        <Button Content="{Binding ToggleBestOnlyButtonText}" Width="150" Command="{Binding ToggleBestOnlyCommand}"/>
                     </StackPanel>
                 </Grid>
             </TabItem>

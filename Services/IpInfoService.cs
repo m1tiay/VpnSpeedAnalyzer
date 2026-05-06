@@ -26,6 +26,8 @@ namespace VpnSpeedAnalyzer.Services
             Timeout = TimeSpan.FromSeconds(HttpTimeoutSeconds)
         };
 
+        public string LastSourceName { get; private set; } = "не определен";
+
         public IpInfoService()
         {
             Logger.Write("IpInfoService конструктор вызван");
@@ -38,6 +40,7 @@ namespace VpnSpeedAnalyzer.Services
                 var primaryResult = await TryGetFromIpWhoIsAsync().ConfigureAwait(false);
                 if (primaryResult != null)
                 {
+                    LastSourceName = "основной (ipwho.is)";
                     Logger.Write("IP получен через основной канал ipwho.is");
                     return primaryResult;
                 }
@@ -47,30 +50,36 @@ namespace VpnSpeedAnalyzer.Services
                 var fallbackResult = await TryGetFromIpApiAsync().ConfigureAwait(false);
                 if (fallbackResult != null)
                 {
+                    LastSourceName = "резервный (ipapi.co)";
                     Logger.Write("IP получен через резервный канал ipapi.co");
                     return fallbackResult;
                 }
 
+                LastSourceName = "недоступен";
                 Logger.Write("Не удалось получить IP ни через основной, ни через резервный канал");
                 return null;
             }
             catch (HttpRequestException ex)
             {
+                LastSourceName = "недоступен";
                 Logger.Write($"Ошибка HTTP при запросе к IP API: {ex.Message}");
                 return null;
             }
             catch (TaskCanceledException ex)
             {
+                LastSourceName = "недоступен";
                 Logger.Write($"Истек таймаут при запросе к IP API: {ex.Message}");
                 return null;
             }
             catch (JsonException ex)
             {
+                LastSourceName = "недоступен";
                 Logger.Write($"Ошибка парсинга JSON в IP API: {ex.Message}");
                 return null;
             }
             catch (Exception ex)
             {
+                LastSourceName = "недоступен";
                 Logger.Write($"Неожиданная ошибка IP API: {ex.GetType().Name}: {ex.Message}");
                 return null;
             }
