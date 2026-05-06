@@ -267,7 +267,7 @@ namespace VpnSpeedAnalyzer.Services
             {
                 if (proc.HasExited)
                     return;
-                proc.Kill(entireTree: true);
+                proc.Kill(entireProcessTree: true);
             }
             catch
             {
