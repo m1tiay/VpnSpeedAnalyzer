@@ -410,35 +410,49 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Margin="8,0,8,8">
-            <Button Content="Мониторинг"
-                    Command="{Binding ShowMonitoringTabCommand}">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsMonitoringTabSelected}" Value="True">
-                                <Setter Property="Background" Value="#2C3255"/>
-                                <Setter Property="BorderBrush" Value="#B07DFF"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-            <Button Content="Аналитика"
-                    Command="{Binding ShowAnalyticsTabCommand}">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
-                        <Setter Property="Margin" Value="0"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsAnalyticsTabSelected}" Value="True">
-                                <Setter Property="Background" Value="#2C3255"/>
-                                <Setter Property="BorderBrush" Value="#B07DFF"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-        </StackPanel>
+        <DockPanel Margin="8,0,8,8" LastChildFill="False">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <Button Content="Мониторинг"
+                        Command="{Binding ShowMonitoringTabCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMonitoringTabSelected}" Value="True">
+                                    <Setter Property="Background" Value="#2C3255"/>
+                                    <Setter Property="BorderBrush" Value="#59D9B7"/>
+                                    <Setter Property="Foreground" Value="#59D9B7"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="Аналитика"
+                        Command="{Binding ShowAnalyticsTabCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
+                            <Setter Property="Margin" Value="0"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsAnalyticsTabSelected}" Value="True">
+                                    <Setter Property="Background" Value="#2C3255"/>
+                                    <Setter Property="BorderBrush" Value="#59D9B7"/>
+                                    <Setter Property="Foreground" Value="#59D9B7"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox Width="{Binding ScoringProfileComboWidth}"
+                          Height="28"
+                          Margin="0"
+                          VerticalAlignment="Center"
+                          ItemsSource="{Binding ScoringProfiles}"
+                          SelectedItem="{Binding SelectedScoringProfile}"/>
+            </StackPanel>
+        </DockPanel>
 
         <TabControl Grid.Row="1"
                     Background="{StaticResource BgBrush}"
@@ -463,8 +477,6 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="IP:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="{Binding CurrentIp}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
@@ -472,14 +484,6 @@
                                 <TextBlock Grid.Column="3" Text="{Binding CurrentCountry}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="4" Text="ASN:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="5" Text="{Binding CurrentAsn}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="6" Text="Профиль:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
-                                <ComboBox Grid.Column="7"
-                                          Width="{Binding ScoringProfileComboWidth}"
-                                          Height="28"
-                                          Margin="0"
-                                          VerticalAlignment="Center"
-                                          ItemsSource="{Binding ScoringProfiles}"
-                                          SelectedItem="{Binding SelectedScoringProfile}"/>
                             </Grid>
 
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
@@ -642,19 +646,7 @@
                     </Grid.RowDefinitions>
 
                     <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
-                        <DockPanel LastChildFill="True">
-                            <StackPanel>
-                                <TextBlock Text="Аналитика" Foreground="{StaticResource TextBrush}" FontWeight="Bold" FontSize="18"/>
-                                <TextBlock Text="Сводный анализ хостов по текущему профилю D.Q.S" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                    <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                    <ComboBox Width="{Binding ScoringProfileComboWidth}" Height="28"
-                                              ItemsSource="{Binding ScoringProfiles}"
-                                              SelectedItem="{Binding SelectedScoringProfile}"
-                                              Margin="0"/>
-                                </StackPanel>
-                            </StackPanel>
-
+                        <DockPanel LastChildFill="False">
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
                                 <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
                                 <TextBlock Text="{Binding RecommendationText}" HorizontalAlignment="Right" Margin="0,4,0,0" Foreground="{StaticResource TextBrush}" FontSize="11"/>
