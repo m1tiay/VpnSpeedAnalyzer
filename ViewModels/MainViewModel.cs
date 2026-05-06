@@ -41,6 +41,7 @@ namespace VpnSpeedAnalyzer
         private double _averagePing;
         private ResultEntry? _selectedResult;
         private bool _isMonitoring;
+        private int _selectedMainTabIndex;
 
         public event PropertyChangedEventHandler? PropertyChanged;
         public event EventHandler<SpeedtestResult>? NewResultArrived;
@@ -278,8 +279,31 @@ namespace VpnSpeedAnalyzer
         public ICommand ToggleMonitoringCommand { get; }
         public ICommand ExportCsvCommand { get; }
         public ICommand ExportTopHostsCsvCommand { get; }
+        public ICommand ShowMonitoringTabCommand { get; }
+        public ICommand ShowAnalyticsTabCommand { get; }
 
         public string ToggleMonitoringButtonText => _isMonitoring ? "Стоп" : "Старт";
+        public int SelectedMainTabIndex
+        {
+            get => _selectedMainTabIndex;
+            set
+            {
+                if (_selectedMainTabIndex != value)
+                {
+                    _selectedMainTabIndex = value;
+                    NotifyPropertyChanged(nameof(SelectedMainTabIndex));
+                    NotifyPropertyChanged(nameof(IsMonitoringTabSelected));
+                    NotifyPropertyChanged(nameof(IsAnalyticsTabSelected));
+                    NotifyPropertyChanged(nameof(ActiveExportButtonText));
+                    NotifyPropertyChanged(nameof(ActiveExportCommand));
+                }
+            }
+        }
+
+        public bool IsMonitoringTabSelected => SelectedMainTabIndex == 0;
+        public bool IsAnalyticsTabSelected => SelectedMainTabIndex == 1;
+        public string ActiveExportButtonText => IsAnalyticsTabSelected ? "Экспорт топа CSV" : "Экспорт CSV";
+        public ICommand ActiveExportCommand => IsAnalyticsTabSelected ? ExportTopHostsCsvCommand : ExportCsvCommand;
 
         public MainViewModel()
         {
@@ -319,6 +343,8 @@ namespace VpnSpeedAnalyzer
                 ToggleMonitoringCommand = new RelayCommand(_ => ToggleMonitoring());
                 ExportCsvCommand = new RelayCommand(_ => ExportCsv());
                 ExportTopHostsCsvCommand = new RelayCommand(_ => ExportTopHostsCsv());
+                ShowMonitoringTabCommand = new RelayCommand(_ => SelectedMainTabIndex = 0);
+                ShowAnalyticsTabCommand = new RelayCommand(_ => SelectedMainTabIndex = 1);
                 Logger.Write("ViewModel: Команды ОК");
 
                 Logger.Write("Основная Виев-Модель инициализирована");

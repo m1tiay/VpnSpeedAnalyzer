@@ -110,6 +110,11 @@
             </Setter>
         </Style>
 
+        <Style x:Key="TopNavButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Width" Value="130"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
@@ -326,6 +331,14 @@
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <ContentPresenter x:Name="PART_SelectedContentHost"
+                                          ContentSource="SelectedContent"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style TargetType="TabItem">
@@ -391,7 +404,46 @@
     </Window.Resources>
 
     <Grid Margin="12" Background="{StaticResource BgBrush}">
-        <TabControl Background="{StaticResource BgBrush}" BorderThickness="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Margin="8,0,8,8">
+            <Button Content="Мониторинг"
+                    Command="{Binding ShowMonitoringTabCommand}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMonitoringTabSelected}" Value="True">
+                                <Setter Property="Background" Value="#2C3255"/>
+                                <Setter Property="BorderBrush" Value="#B07DFF"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Content="Аналитика"
+                    Command="{Binding ShowAnalyticsTabCommand}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
+                        <Setter Property="Margin" Value="0"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsAnalyticsTabSelected}" Value="True">
+                                <Setter Property="Background" Value="#2C3255"/>
+                                <Setter Property="BorderBrush" Value="#B07DFF"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
+
+        <TabControl Grid.Row="1"
+                    Background="{StaticResource BgBrush}"
+                    BorderThickness="0"
+                    SelectedIndex="{Binding SelectedMainTabIndex}">
             <TabItem Header="Мониторинг">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
@@ -399,7 +451,6 @@
                         <RowDefinition Height="1.25*"/>
                         <RowDefinition Height="6"/>
                         <RowDefinition Height="2.1*"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
@@ -580,10 +631,6 @@
                         </Grid>
                     </Border>
 
-                    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Command="{Binding ToggleMonitoringCommand}"/>
-                        <Button Content="Экспорт CSV" Width="140" Command="{Binding ExportCsvCommand}"/>
-                    </StackPanel>
                 </Grid>
             </TabItem>
 
@@ -595,18 +642,32 @@
                     </Grid.RowDefinitions>
 
                     <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
-                        <DockPanel>
+                        <DockPanel LastChildFill="True">
                             <StackPanel>
                                 <TextBlock Text="Аналитика" Foreground="{StaticResource TextBrush}" FontWeight="Bold" FontSize="18"/>
                                 <TextBlock Text="Сводный анализ хостов по текущему профилю D.Q.S" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <ComboBox Width="{Binding ScoringProfileComboWidth}" Height="28"
+                                              ItemsSource="{Binding ScoringProfiles}"
+                                              SelectedItem="{Binding SelectedScoringProfile}"
+                                              Margin="0"/>
+                                </StackPanel>
                             </StackPanel>
-                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                                <ComboBox Width="{Binding ScoringProfileComboWidth}" Height="28"
-                                          ItemsSource="{Binding ScoringProfiles}"
-                                          SelectedItem="{Binding SelectedScoringProfile}"
-                                          Margin="0,0,12,0"/>
-                                <Button Content="Экспорт топа CSV" Width="150" Command="{Binding ExportTopHostsCsvCommand}"/>
+
+                            <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
+                                <TextBlock Text="{Binding RecommendationText}" HorizontalAlignment="Right" Margin="0,4,0,0" Foreground="{StaticResource TextBrush}" FontSize="11"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                    <Ellipse Width="8" Height="8" Fill="{StaticResource OkBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="ОК" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
+                                    <Ellipse Width="8" Height="8" Fill="{StaticResource CheckBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Проверка" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
+                                    <Ellipse Width="8" Height="8" Fill="{StaticResource WaitBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Ожидание" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
+                                    <Ellipse Width="8" Height="8" Fill="{StaticResource ErrorBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Ошибка" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                                </StackPanel>
                             </StackPanel>
                         </DockPanel>
                     </Border>
@@ -677,5 +738,10 @@
                 </Grid>
             </TabItem>
         </TabControl>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+            <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Command="{Binding ToggleMonitoringCommand}"/>
+            <Button Content="{Binding ActiveExportButtonText}" Width="150" Command="{Binding ActiveExportCommand}"/>
+        </StackPanel>
     </Grid>
 </Window>
