@@ -319,11 +319,54 @@
             </Style.Triggers>
         </Style>
 
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{StaticResource BgBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PanelSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid KeyboardNavigation.TabNavigation="Local"
+                              SnapsToDevicePixels="True">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0"
+                                    Background="{StaticResource BgBrush}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"
+                                    Padding="8,8,8,0"
+                                    Margin="0,0,0,8">
+                                <TabPanel x:Name="HeaderPanel"
+                                          IsItemsHost="True"
+                                          Background="Transparent"
+                                          KeyboardNavigation.TabIndex="1"/>
+                            </Border>
+                            <Border Grid.Row="1"
+                                    Background="{StaticResource BgBrush}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter x:Name="PART_SelectedContentHost"
+                                                  Margin="2"
+                                                  KeyboardNavigation.TabIndex="2"
+                                                  ContentSource="SelectedContent"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="TabItem">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
             <Setter Property="Panel.ZIndex" Value="0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -382,7 +425,7 @@
     </Window.Resources>
 
     <Grid Margin="12" Background="{StaticResource BgBrush}">
-        <TabControl Background="{StaticResource BgBrush}" BorderThickness="0">
+        <TabControl Background="{StaticResource BgBrush}" BorderThickness="1">
             <TabItem Header="Мониторинг">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
@@ -603,77 +646,69 @@
                         </DockPanel>
                     </Border>
 
-                    <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <Border CornerRadius="8" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" ClipToBounds="True">
-                                <DataGrid ItemsSource="{Binding Results}" IsSynchronizedWithCurrentItem="False" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
-                                        <Setter Property="FontWeight" Value="Normal"/>
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding Rank}" Value="1"/>
-                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Background" Value="#3B2F10"/>
-                                                <Setter Property="FontWeight" Value="Bold"/>
-                                            </MultiDataTrigger>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding Rank}" Value="2"/>
-                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Background" Value="#2D3440"/>
-                                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                            </MultiDataTrigger>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding Rank}" Value="3"/>
-                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Background" Value="#3A2A24"/>
-                                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.RowStyle>
-                                <DataGrid.Columns>
-                                    <DataGridTemplateColumn Header="" Width="0.35*">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding RankMarker}"
-                                                           Foreground="{Binding RankMarkerColor}"
-                                                           FontSize="15"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
-                                    <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
-                                    <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
-                                    <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
-                                    <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="0.8*" SortMemberPath="Ping"/>
-                                    <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="0.8*" SortMemberPath="Jitter"/>
-                                    <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
-                                    <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="0.8*" SortMemberPath="Download"/>
-                                    <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="0.8*" SortMemberPath="Upload"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <UniformGrid Rows="1" Columns="4" Margin="0,0,0,10">
+                            <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="Всего замеров" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                                    <TextBlock Text="{Binding TotalMeasurements}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold"/>
+                                </StackPanel>
                             </Border>
-                            <TextBlock Grid.Row="1"
-                                       Margin="0,8,0,0"
-                                       Text="{Binding RecommendationText}"
-                                       Foreground="{StaticResource MutedTextBrush}"
-                                       TextWrapping="Wrap"/>
-                        </Grid>
-                    </Border>
+                            <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="Уникальных хостов" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                                    <TextBlock Text="{Binding UniqueHostsCount}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="Средний D.Q.S" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                                    <TextBlock Text="{Binding AverageScore, StringFormat=F2}" Foreground="{StaticResource OkBrush}" FontSize="22" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="Средний пинг (мс)" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
+                                    <TextBlock Text="{Binding AveragePing, StringFormat=F2}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Border CornerRadius="8" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" ClipToBounds="True">
+                                    <DataGrid ItemsSource="{Binding HostRatings}" IsSynchronizedWithCurrentItem="False" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
+                                            <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="1.2*"/>
+                                            <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="1*"/>
+                                            <DataGridTextColumn Header="Замеры" Binding="{Binding Samples}" Width="0.7*"/>
+                                            <DataGridTextColumn Header="Ср. D.Q.S" Binding="{Binding AverageScore, StringFormat=F2}" Width="0.9*"/>
+                                            <DataGridTextColumn Header="Лучший D.Q.S" Binding="{Binding BestScore, StringFormat=F2}" Width="0.9*"/>
+                                            <DataGridTextColumn Header="Ср. пинг" Binding="{Binding AveragePing, StringFormat=F2}" Width="0.9*"/>
+                                            <DataGridTextColumn Header="Ср. дрожание" Binding="{Binding AverageJitter, StringFormat=F2}" Width="1*"/>
+                                            <DataGridTextColumn Header="Ср. потери" Binding="{Binding AverageLoss, StringFormat=F2}" Width="0.9*"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Border>
+
+                                <StackPanel Grid.Row="1" Margin="0,8,0,0">
+                                    <TextBlock Text="{Binding BestHostSummaryText}" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding RatingSummaryText}" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding StabilitySummaryText}" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </Grid>
             </TabItem>
         </TabControl>

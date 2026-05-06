@@ -10,6 +10,7 @@ using System.Windows.Media;
 using VpnSpeedAnalyzer.Logic;
 using VpnSpeedAnalyzer.Models;
 using VpnSpeedAnalyzer.Services;
+using System.Collections.Generic;
 
 namespace VpnSpeedAnalyzer
 {
@@ -33,6 +34,11 @@ namespace VpnSpeedAnalyzer
         private string _statusColor = "#A8B0D9";
         private string _selectedScoringProfile = ProfileUniversal;
         private string _recommendationText = "Рекомендация появится после первого успешного замера";
+        private string _ratingSummaryText = "Недостаточно данных для аналитики";
+        private string _stabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
+        private string _bestHostSummaryText = "Лучший хост появится после первого успешного замера";
+        private double _averageScore;
+        private double _averagePing;
         private ResultEntry? _selectedResult;
         private bool _isMonitoring;
 
@@ -41,6 +47,7 @@ namespace VpnSpeedAnalyzer
 
         public ObservableCollection<ResultEntry> Results { get; } = new();
         public ObservableCollection<ResultEntry> TopHosts { get; } = new();
+        public ObservableCollection<HostRatingRow> HostRatings { get; } = new();
         public ObservableCollection<string> ScoringProfiles { get; } = new()
         {
             ProfileUniversal,
@@ -198,6 +205,59 @@ namespace VpnSpeedAnalyzer
         }
 
         /// <summary>
+        /// Краткая сводка по распределению рейтинга.
+        /// </summary>
+        public string RatingSummaryText
+        {
+            get => _ratingSummaryText;
+            set
+            {
+                if (_ratingSummaryText != value)
+                {
+                    _ratingSummaryText = value;
+                    NotifyPropertyChanged(nameof(RatingSummaryText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Текстовая оценка стабильности по джиттеру и потерям.
+        /// </summary>
+        public string StabilitySummaryText
+        {
+            get => _stabilitySummaryText;
+            set
+            {
+                if (_stabilitySummaryText != value)
+                {
+                    _stabilitySummaryText = value;
+                    NotifyPropertyChanged(nameof(StabilitySummaryText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Краткая аналитика по лучшему хосту.
+        /// </summary>
+        public string BestHostSummaryText
+        {
+            get => _bestHostSummaryText;
+            set
+            {
+                if (_bestHostSummaryText != value)
+                {
+                    _bestHostSummaryText = value;
+                    NotifyPropertyChanged(nameof(BestHostSummaryText));
+                }
+            }
+        }
+
+        public int TotalMeasurements => Results.Count;
+        public int UniqueHostsCount => HostRatings.Count;
+        public double AverageScore => _averageScore;
+        public double AveragePing => _averagePing;
+
+        /// <summary>
         /// Выбранная запись в таблице результатов
         /// </summary>
         public ResultEntry? SelectedResult
@@ -298,6 +358,7 @@ namespace VpnSpeedAnalyzer
 
                     UpdateRecommendation();
                     UpdateTopHosts();
+                    UpdateHostAnalytics();
                     StatusText = $"✓ Последняя проверка: {DateTime.Now:HH:mm:ss}";
                     StatusColor = "#59D9B7";
 
@@ -519,6 +580,7 @@ namespace VpnSpeedAnalyzer
             _resultsManager.RecalculateScores(CalculateQualityScore, BuildScoreDetails);
             UpdateRecommendation();
             UpdateTopHosts();
+            UpdateHostAnalytics();
             NotifyPropertyChanged(nameof(SelectedResult));
         }
 
@@ -624,6 +686,87 @@ namespace VpnSpeedAnalyzer
             TopHosts.Clear();
             foreach (var topItem in rankedResults.Take(TopHostsCount))
                 TopHosts.Add(topItem);
+        }
+
+        private void UpdateHostAnalytics()
+        {
+            if (Results.Count == 0)
+            {
+                HostRatings.Clear();
+                _averageScore = 0;
+                _averagePing = 0;
+                NotifyPropertyChanged(nameof(AverageScore));
+                NotifyPropertyChanged(nameof(AveragePing));
+                NotifyPropertyChanged(nameof(TotalMeasurements));
+                NotifyPropertyChanged(nameof(UniqueHostsCount));
+                RatingSummaryText = "Недостаточно данных для аналитики";
+                StabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
+                BestHostSummaryText = "Лучший хост появится после первого успешного замера";
+                return;
+            }
+
+            var grouped = Results
+                .GroupBy(r => $"{r.Ip}|{r.Country}")
+                .Select(g =>
+                {
+                    var list = g.ToList();
+                    var sampleCount = list.Count;
+                    var best = list.Max(x => x.Score);
+                    var avgScore = Math.Round(list.Average(x => x.Score), 2);
+                    var avgPing = Math.Round(list.Average(x => x.Ping), 2);
+                    var avgJitter = Math.Round(list.Average(x => x.Jitter), 2);
+                    var avgLoss = Math.Round(list.Average(x => x.Loss), 2);
+                    var latest = list[0];
+
+                    return new HostRatingRow
+                    {
+                        Ip = latest.Ip,
+                        Country = latest.Country,
+                        Samples = sampleCount,
+                        AverageScore = avgScore,
+                        BestScore = Math.Round(best, 2),
+                        AveragePing = avgPing,
+                        AverageJitter = avgJitter,
+                        AverageLoss = avgLoss
+                    };
+                })
+                .OrderByDescending(x => x.AverageScore)
+                .ThenBy(x => x.AveragePing)
+                .ToList();
+
+            HostRatings.Clear();
+            var rank = 1;
+            foreach (var host in grouped)
+            {
+                host.Rank = rank++;
+                HostRatings.Add(host);
+            }
+
+            _averageScore = Math.Round(Results.Average(x => x.Score), 2);
+            _averagePing = Math.Round(Results.Average(x => x.Ping), 2);
+            NotifyPropertyChanged(nameof(AverageScore));
+            NotifyPropertyChanged(nameof(AveragePing));
+            NotifyPropertyChanged(nameof(TotalMeasurements));
+            NotifyPropertyChanged(nameof(UniqueHostsCount));
+
+            var bestHost = HostRatings.FirstOrDefault();
+            var worstHost = HostRatings.LastOrDefault();
+            if (bestHost == null || worstHost == null)
+            {
+                RatingSummaryText = "Недостаточно данных для аналитики";
+                StabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
+                BestHostSummaryText = "Лучший хост появится после первого успешного замера";
+                return;
+            }
+
+            var scoreDelta = Math.Round(bestHost.AverageScore - worstHost.AverageScore, 2);
+            RatingSummaryText = $"Разброс среднего D.Q.S между лучшим и худшим хостом: {scoreDelta:F2}";
+
+            var avgJitterAll = Results.Average(x => x.Jitter);
+            var avgLossAll = Results.Average(x => x.Loss);
+            StabilitySummaryText = $"Средняя стабильность линии: джиттер {avgJitterAll:F2} мс, потери {avgLossAll:F2}%";
+
+            BestHostSummaryText = $"Лидер: {bestHost.Country} ({bestHost.Ip}) — ср. D.Q.S {bestHost.AverageScore:F2} по {bestHost.Samples} замерам";
         }
 
         private static double ScoreLowerIsBetter(double value, double ideal, double worst)
