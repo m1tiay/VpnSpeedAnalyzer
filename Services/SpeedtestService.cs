@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -23,7 +22,6 @@ namespace VpnSpeedAnalyzer.Services
         private const int MaxAttempts = 3;
         private const int RetryDelayMs = 5000;
 
-        private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
         private static readonly Regex PercentRx = new(@"(?<p>\d{1,3}(?:\.\d+)?)\s*%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         public string? LastFailureReason { get; private set; }
@@ -196,10 +194,7 @@ namespace VpnSpeedAnalyzer.Services
                     if (line == null)
                         break;
 
-                    var byLine = state.BumpByOutputLine(line, progress);
-                    var inferred = InferProgressFromLine(line);
-                    if (inferred.HasValue)
-                        state.BumpToAtLeast(Math.Max(inferred.Value, byLine), progress);
+                    state.BumpByOutputLine(line, progress);
                 }
             }
             catch
@@ -233,33 +228,6 @@ namespace VpnSpeedAnalyzer.Services
             {
                 // отмена heartbeat — ожидаемо
             }
-        }
-
-        private static double? InferProgressFromLine(string line)
-        {
-            if (string.IsNullOrWhiteSpace(line))
-                return null;
-
-            var m = PercentRx.Match(line);
-            if (m.Success && double.TryParse(m.Groups["p"].Value, NumberStyles.AllowDecimalPoint, Invariant, out var pct))
-                return Math.Clamp(pct, 0, 99);
-
-            var s = line.ToLowerInvariant();
-
-            if (s.Contains("retrieving") && s.Contains("configuration"))
-                return 7;
-            if (s.Contains("server list") || s.Contains("selecting"))
-                return 14;
-            if (s.Contains("latency") || (s.Contains("ping") && s.Contains("test")))
-                return 28;
-            if (s.Contains("jitter"))
-                return 32;
-            if (s.Contains("download"))
-                return 44;
-            if (s.Contains("upload"))
-                return 74;
-
-            return null;
         }
 
         private static void TryKill(Process proc)
@@ -319,7 +287,10 @@ namespace VpnSpeedAnalyzer.Services
 
                 lock (_gate)
                 {
-                    // Привязываем прогресс к строкам вывода speedtest: шаг 10% за каждую значимую строку.
+                    if (!IsSignificantProgressLine(line))
+                        return _max;
+
+                    // Привязываем прогресс к ключевым строкам вывода speedtest: около 10 шагов по 10%.
                     if (_lineSteps < 10)
                         _lineSteps++;
 
@@ -331,6 +302,24 @@ namespace VpnSpeedAnalyzer.Services
                     p?.Report(_max);
                     return byLine;
                 }
+            }
+
+            private static bool IsSignificantProgressLine(string line)
+            {
+                var s = line.Trim().ToLowerInvariant();
+                if (s.Length == 0)
+                    return false;
+
+                return s.StartsWith("speedtest by ookla", StringComparison.Ordinal)
+                       || s.StartsWith("server:", StringComparison.Ordinal)
+                       || s.StartsWith("isp:", StringComparison.Ordinal)
+                       || s.StartsWith("idle latency:", StringComparison.Ordinal)
+                       || s.StartsWith("download:", StringComparison.Ordinal)
+                       || s.StartsWith("upload:", StringComparison.Ordinal)
+                       || s.StartsWith("packet loss:", StringComparison.Ordinal)
+                       || s.StartsWith("result url:", StringComparison.Ordinal)
+                       || s.Contains("latency")
+                       || PercentRx.IsMatch(s);
             }
         }
 

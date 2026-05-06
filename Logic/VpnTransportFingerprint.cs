@@ -9,39 +9,24 @@ namespace VpnSpeedAnalyzer.Logic
 {
     /// <summary>
     /// Отпечаток транспортных VPN-соединений:
-    /// ищем TCP-сессии ESTABLISHED, у которых локальный IP принадлежит туннельному интерфейсу.
+    /// сначала ищем TCP-сессии ESTABLISHED на туннельных IP, при их отсутствии —
+    /// резервно берём вероятные VPN-транспорты по характерным портам.
     /// </summary>
     public static class VpnTransportFingerprint
     {
+        private static readonly int[] KnownVpnPorts =
+            { 443, 1194, 1443, 51820, 51821, 8443, 9443 };
+
         public static string Compute()
         {
             try
             {
                 var tunnelIps = CollectTunnelIpv4Addresses();
-                if (tunnelIps.Count == 0)
-                    return string.Empty;
+                var tcp = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
 
-                var entries = new List<string>(16);
-                foreach (var c in IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections())
-                {
-                    if (c.State != TcpState.Established)
-                        continue;
-
-                    if (c.LocalEndPoint.Address.AddressFamily != AddressFamily.InterNetwork)
-                        continue;
-
-                    if (!tunnelIps.Contains(c.LocalEndPoint.Address))
-                        continue;
-
-                    var remote = c.RemoteEndPoint.Address;
-                    if (remote.AddressFamily != AddressFamily.InterNetwork)
-                        continue;
-
-                    if (IPAddress.IsLoopback(remote))
-                        continue;
-
-                    entries.Add($"{remote}:{c.RemoteEndPoint.Port}");
-                }
+                var entries = CollectByTunnelLocalIp(tcp, tunnelIps);
+                if (entries.Count == 0)
+                    entries = CollectByKnownVpnPorts(tcp);
 
                 if (entries.Count == 0)
                     return string.Empty;
@@ -54,6 +39,86 @@ namespace VpnSpeedAnalyzer.Logic
                 Logger.Write($"VPN fingerprint error: {ex.GetType().Name}: {ex.Message}");
                 return string.Empty;
             }
+        }
+
+        private static List<string> CollectByTunnelLocalIp(TcpConnectionInformation[] tcp, HashSet<IPAddress> tunnelIps)
+        {
+            if (tunnelIps.Count == 0)
+                return new List<string>();
+
+            var entries = new List<string>(16);
+            foreach (var c in tcp)
+            {
+                if (c.State != TcpState.Established)
+                    continue;
+
+                if (c.LocalEndPoint.Address.AddressFamily != AddressFamily.InterNetwork)
+                    continue;
+
+                if (!tunnelIps.Contains(c.LocalEndPoint.Address))
+                    continue;
+
+                var remote = c.RemoteEndPoint.Address;
+                if (!IsGoodRemoteIpv4(remote))
+                    continue;
+
+                entries.Add($"{remote}:{c.RemoteEndPoint.Port}");
+            }
+
+            return entries;
+        }
+
+        private static List<string> CollectByKnownVpnPorts(TcpConnectionInformation[] tcp)
+        {
+            var entries = new List<string>(8);
+            foreach (var c in tcp)
+            {
+                if (c.State != TcpState.Established)
+                    continue;
+
+                if (c.RemoteEndPoint.Address.AddressFamily != AddressFamily.InterNetwork)
+                    continue;
+
+                if (!KnownVpnPorts.Contains(c.RemoteEndPoint.Port))
+                    continue;
+
+                var remote = c.RemoteEndPoint.Address;
+                if (!IsGoodRemoteIpv4(remote))
+                    continue;
+
+                entries.Add($"{remote}:{c.RemoteEndPoint.Port}");
+            }
+
+            return entries;
+        }
+
+        private static bool IsGoodRemoteIpv4(IPAddress remote)
+        {
+            if (remote.AddressFamily != AddressFamily.InterNetwork)
+                return false;
+            if (IPAddress.IsLoopback(remote))
+                return false;
+            if (IsPrivateOrSpecial(remote))
+                return false;
+            return true;
+        }
+
+        private static bool IsPrivateOrSpecial(IPAddress ip)
+        {
+            var b = ip.GetAddressBytes();
+            // 10.0.0.0/8
+            if (b[0] == 10) return true;
+            // 172.16.0.0/12
+            if (b[0] == 172 && b[1] >= 16 && b[1] <= 31) return true;
+            // 192.168.0.0/16
+            if (b[0] == 192 && b[1] == 168) return true;
+            // CGNAT 100.64.0.0/10
+            if (b[0] == 100 && b[1] >= 64 && b[1] <= 127) return true;
+            // Link-local 169.254.0.0/16
+            if (b[0] == 169 && b[1] == 254) return true;
+            // Benchmark/testing 198.18.0.0/15
+            if (b[0] == 198 && (b[1] == 18 || b[1] == 19)) return true;
+            return false;
         }
 
         private static HashSet<IPAddress> CollectTunnelIpv4Addresses()

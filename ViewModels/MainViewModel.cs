@@ -1168,17 +1168,17 @@ namespace VpnSpeedAnalyzer
 
         private void BlankComparisonDeltas()
         {
-            _cmpDqsDeltaText = "";
+            _cmpDqsDeltaText = "-";
             _cmpDqsDeltaBrush = CmpBrushNeutral;
-            _cmpPingDeltaText = "";
+            _cmpPingDeltaText = "-";
             _cmpPingDeltaBrush = CmpBrushNeutral;
-            _cmpJitterDeltaText = "";
+            _cmpJitterDeltaText = "-";
             _cmpJitterDeltaBrush = CmpBrushNeutral;
-            _cmpLossDeltaText = "";
+            _cmpLossDeltaText = "-";
             _cmpLossDeltaBrush = CmpBrushNeutral;
-            _cmpDownDeltaText = "";
+            _cmpDownDeltaText = "-";
             _cmpDownDeltaBrush = CmpBrushNeutral;
-            _cmpUpDeltaText = "";
+            _cmpUpDeltaText = "-";
             _cmpUpDeltaBrush = CmpBrushNeutral;
         }
 
@@ -1212,7 +1212,7 @@ namespace VpnSpeedAnalyzer
         }
 
         /// <summary>
-        /// Δ = выбранный − лидер; зелёный/красный по тому, лучше ли для метрики стало больше или меньше.
+        /// Δ = выбранный − лидер; плюс красим зелёным, минус — красным.
         /// </summary>
         private static void ComputeDirectedDelta(
             double selectedValue,
@@ -1223,10 +1223,11 @@ namespace VpnSpeedAnalyzer
             out string deltaText,
             out Brush deltaBrush)
         {
+            _ = higherIsBetter;
             var d = selectedValue - leaderValue;
             if (Math.Abs(d) < epsilon)
             {
-                deltaText = format == "F2" ? "Δ 0.00" : "Δ 0";
+                deltaText = format == "F2" ? "+0.00" : "+0";
                 deltaBrush = CmpBrushNeutral;
                 return;
             }
@@ -1236,15 +1237,8 @@ namespace VpnSpeedAnalyzer
                 ? "+" + d.ToString(format, inv)
                 : "\u2212" + (-d).ToString(format, inv);
 
-            deltaText = "Δ " + body;
-            deltaBrush = DeltaBrushForChange(d, higherIsBetter);
-        }
-
-        private static Brush DeltaBrushForChange(double delta, bool higherIsBetter)
-        {
-            if (higherIsBetter)
-                return delta > 0 ? CmpBrushGood : CmpBrushBad;
-            return delta > 0 ? CmpBrushBad : CmpBrushGood;
+            deltaText = body;
+            deltaBrush = d > 0 ? CmpBrushGood : CmpBrushBad;
         }
 
         private static SolidColorBrush CreateCmpBrushStatic(string hex)
