@@ -289,7 +289,7 @@
                                 BorderThickness="1"
                                 CornerRadius="6"
                                 SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Left"
+                            <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -348,6 +348,16 @@
                                 <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
                                 <Setter Property="Panel.ZIndex" Value="10"/>
                             </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="TabBorder" Property="Background" Value="#2A2F4A"/>
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                <Setter Property="Panel.ZIndex" Value="10"/>
+                            </MultiTrigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="TabBorder" Property="Background" Value="#30365B"/>
                                 <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
@@ -507,7 +517,7 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="Топ" Binding="{Binding RankBadge}" Width="0.5*"/>
+                                        <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
                                         <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
                                         <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
                                         <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
@@ -645,7 +655,6 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn Header="Топ" Binding="{Binding RankBadge}" Width="0.5*"/>
                                     <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
                                     <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
                                     <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
@@ -655,7 +664,6 @@
                                     <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
                                     <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="0.8*" SortMemberPath="Download"/>
                                     <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="0.8*" SortMemberPath="Upload"/>
-                                    <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                             </Border>

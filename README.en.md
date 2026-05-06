@@ -8,6 +8,9 @@ English | [Русский](README.md)
 
 Real-time host ranking by ping, jitter, packet loss, download/upload, and `D.Q.S (0..100)` with profile presets.
 
+> Important: for accurate IP change detection, the app must run through the same VPN tunnel you are testing.  
+> If the app traffic bypasses the VPN, route and external IP changes may not be visible.
+
 ## Key Features
 
 - **Smart IP detection:** primary source `ipwho.is`, fallback `ipapi.co`.
