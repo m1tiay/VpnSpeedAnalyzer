@@ -45,6 +45,23 @@ namespace VpnSpeedAnalyzer
             ProfileStreaming
         };
 
+        public double ScoringProfileComboWidth
+        {
+            get
+            {
+                var longestProfileLength = 0;
+                foreach (var profile in ScoringProfiles)
+                {
+                    if (!string.IsNullOrEmpty(profile) && profile.Length > longestProfileLength)
+                        longestProfileLength = profile.Length;
+                }
+
+                // Примерная ширина текста + внутренние отступы и зона стрелки.
+                var calculatedWidth = longestProfileLength * 9 + 56;
+                return Math.Max(120, calculatedWidth);
+            }
+        }
+
         public string CurrentIp
         {
             get => _currentIp;

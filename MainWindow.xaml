@@ -134,7 +134,6 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
-            <Setter Property="ToolTip" Value="{Binding SelectedScoringProfileDescription}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
@@ -150,7 +149,7 @@
                                         <ColumnDefinition Width="30"/>
                                     </Grid.ColumnDefinitions>
                                     <ContentPresenter Grid.Column="0"
-                                                      Margin="10,0,6,0"
+                                                      Margin="10,0,34,0"
                                                       VerticalAlignment="Center"
                                                       HorizontalAlignment="Left"
                                                       IsHitTestVisible="False"
@@ -174,10 +173,10 @@
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="ArrowHost" Property="Background" Value="#2D3150"/>
+                                                        <Setter TargetName="ArrowHost" Property="Background" Value="Transparent"/>
                                                     </Trigger>
                                                     <Trigger Property="IsChecked" Value="True">
-                                                        <Setter TargetName="ArrowHost" Property="Background" Value="#2A2F4A"/>
+                                                        <Setter TargetName="ArrowHost" Property="Background" Value="Transparent"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
@@ -339,7 +338,7 @@
                                 <TextBlock Grid.Column="5" Text="{Binding CurrentAsn}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="6" Text="Профиль:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
                                 <ComboBox Grid.Column="7"
-                                          Width="150"
+                                          Width="{Binding ScoringProfileComboWidth}"
                                           Height="28"
                                           Margin="0"
                                           VerticalAlignment="Center"
@@ -477,7 +476,7 @@
                             </StackPanel>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                                <ComboBox Width="150" Height="28"
+                                <ComboBox Width="{Binding ScoringProfileComboWidth}" Height="28"
                                           ItemsSource="{Binding ScoringProfiles}"
                                           SelectedItem="{Binding SelectedScoringProfile}"
                                           Margin="0,0,12,0"/>
