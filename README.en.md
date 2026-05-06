@@ -8,8 +8,19 @@ English | [Русский](README.md)
 
 Real-time host ranking by ping, jitter, packet loss, download/upload, and `D.Q.S (0..100)` with profile presets.
 
-> Important: for accurate IP change detection, the app must run through the same VPN tunnel you are testing.  
-> If the app traffic bypasses the VPN, route and external IP changes may not be visible.
+## Requirements
+
+To get accurate measurements you need to prepare the environment:
+
+- **`speedtest.exe` (Ookla Speedtest CLI).**
+  The app runs this binary in background to measure latency and bandwidth.
+  Download from the official site: <https://www.speedtest.net/apps/cli>.
+  Just place `speedtest.exe` next to the app `.exe` — this folder is checked first.
+  Adding it to `PATH` is optional and only used as a fallback if the file is not next to the app.
+- **Run everything through the VPN tunnel you are testing.**
+  Both the app and `speedtest.exe` must use the same VPN tunnel —
+  otherwise external IP, country, ASN and metrics will reflect your real ISP,
+  not the VPN. If their traffic bypasses VPN, route and IP changes may not be detected.
 
 ## Key Features
 

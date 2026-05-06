@@ -9,6 +9,7 @@
         Width="1100" Height="700"
         MinWidth="980" MinHeight="620"
         WindowStartupLocation="CenterScreen"
+        Icon="Assets/icon.ico"
         Background="#141622">
     <Window.Resources>
         <Style TargetType="{x:Type Control}">
