@@ -153,22 +153,30 @@ namespace VpnSpeedAnalyzer.Logic
 
         /// <summary>
         /// True, если transport fingerprint отличается от последнего принятого и стабилен не меньше <see cref="VpnTransportDebounceMs"/> мс.
+        /// decisionLog возвращает диагностику принятого решения для подробного лога.
         /// </summary>
-        private bool TryConfirmVpnTransportChange(string fingerprint)
+        private bool TryConfirmVpnTransportChange(string fingerprint, out string decisionLog)
         {
+            decisionLog = string.Empty;
+
             if (string.IsNullOrWhiteSpace(fingerprint))
+            {
+                decisionLog = "fingerprint пустой";
                 return false;
+            }
 
             if (string.IsNullOrWhiteSpace(_lastVpnTransportFingerprint))
             {
                 _lastVpnTransportFingerprint = fingerprint;
                 _vpnDebounceChangeInProgress = false;
+                decisionLog = $"инициализация базы: endpoints={CountFingerprintEndpoints(fingerprint)}";
                 return false;
             }
 
             if (string.Equals(fingerprint, _lastVpnTransportFingerprint, StringComparison.Ordinal))
             {
                 _vpnDebounceChangeInProgress = false;
+                decisionLog = $"без изменений: endpoints={CountFingerprintEndpoints(fingerprint)}";
                 return false;
             }
 
@@ -176,7 +184,8 @@ namespace VpnSpeedAnalyzer.Logic
             if (delta < VpnTransportMinDeltaEndpoints)
             {
                 _vpnDebounceChangeInProgress = false;
-                Logger.Write($"VPN transport: изменение слишком мало (delta={delta}), игнорируем");
+                decisionLog =
+                    $"изменение мало: delta={delta} < порог={VpnTransportMinDeltaEndpoints}, endpoints={CountFingerprintEndpoints(fingerprint)}";
                 return false;
             }
 
@@ -187,17 +196,23 @@ namespace VpnSpeedAnalyzer.Logic
             {
                 _vpnDebounceChangeInProgress = true;
                 _vpnDebounceCandidateSince = DateTime.UtcNow;
-                Logger.Write($"VPN transport: значимое изменение (delta={delta}) — ждём стабилизацию");
+                decisionLog =
+                    $"значимое изменение: delta={delta}, старт debounce={VpnTransportDebounceMs}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
                 return false;
             }
 
             var waitedMs = (DateTime.UtcNow - _vpnDebounceCandidateSince).TotalMilliseconds;
             if (waitedMs < VpnTransportDebounceMs)
+            {
+                decisionLog =
+                    $"debounce: delta={delta}, ждём {waitedMs:F0}/{VpnTransportDebounceMs}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
                 return false;
+            }
 
             _lastVpnTransportFingerprint = fingerprint;
             _vpnDebounceChangeInProgress = false;
-            Logger.Write($"VPN transport: смена подтверждена после {waitedMs:F0} мс стабильности");
+            decisionLog =
+                $"смена подтверждена: delta={delta}, выдержка={waitedMs:F0}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
             return true;
         }
 
@@ -223,6 +238,14 @@ namespace VpnSpeedAnalyzer.Logic
             return set;
         }
 
+        private static int CountFingerprintEndpoints(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return 0;
+
+            return value.Split('|', StringSplitOptions.RemoveEmptyEntries).Length;
+        }
+
         /// <summary>
         /// Основной цикл мониторинга
         /// </summary>
@@ -242,8 +265,21 @@ namespace VpnSpeedAnalyzer.Logic
                             UpdateVpnProcessLabel(vpnSnapshot.ProcessId);
                         }
 
-                        var vpnTransportChanged = vpnSnapshot != null
-                            && TryConfirmVpnTransportChange(vpnSnapshot.Fingerprint);
+                        var vpnDecision = "snapshot отсутствует";
+                        var vpnTransportChanged = false;
+                        if (vpnSnapshot != null)
+                            vpnTransportChanged = TryConfirmVpnTransportChange(vpnSnapshot.Fingerprint, out vpnDecision);
+
+                        if (vpnSnapshot == null)
+                        {
+                            Logger.Write("VPN transport tick: snapshot отсутствует (нет tunnel TCP ESTABLISHED)");
+                        }
+                        else
+                        {
+                            Logger.Write(
+                                $"VPN transport tick: pid={vpnSnapshot.ProcessId}, conn={vpnSnapshot.ConnectionCount}, " +
+                                $"endpoints={CountFingerprintEndpoints(vpnSnapshot.Fingerprint)}, changed={vpnTransportChanged}, {vpnDecision}");
+                        }
 
                         var utcNow = DateTime.UtcNow;
 
