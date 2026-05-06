@@ -39,6 +39,7 @@ namespace VpnSpeedAnalyzer.Logic
 
         private string? _debounceCandidateFingerprint;
         private DateTime _debounceCandidateSince;
+        private string? _lastVpnTransportFingerprint;
 
         private DateTime _lastSpeedtestUtc = DateTime.MinValue;
 
@@ -80,6 +81,7 @@ namespace VpnSpeedAnalyzer.Logic
 
             _acceptedFingerprint = null;
             _debounceCandidateFingerprint = null;
+            _lastVpnTransportFingerprint = null;
             _lastSeenEgressIp = null;
             _lastEgressPollUtc = DateTime.MinValue;
             NetworkChange.NetworkAddressChanged += OnNetworkTopologyHint;
@@ -102,6 +104,7 @@ namespace VpnSpeedAnalyzer.Logic
 
             _lastSeenEgressIp = null;
             _lastEgressPollUtc = DateTime.MinValue;
+            _lastVpnTransportFingerprint = null;
 
             var cts = _cts;
             _cts = null;
@@ -210,6 +213,19 @@ namespace VpnSpeedAnalyzer.Logic
                         var fingerprint = LocalNetworkFingerprint.Compute();
 
                         var topologyConfirmed = TryConfirmTopologyChange(fingerprint);
+                        var vpnTransportChanged = false;
+                        var vpnTransportFp = VpnTransportFingerprint.Compute();
+                        if (!string.IsNullOrEmpty(vpnTransportFp))
+                        {
+                            if (!string.IsNullOrEmpty(_lastVpnTransportFingerprint)
+                                && !string.Equals(_lastVpnTransportFingerprint, vpnTransportFp, StringComparison.Ordinal))
+                            {
+                                vpnTransportChanged = true;
+                                Logger.Write("Обнаружена смена VPN transport fingerprint (remote IP:port на туннеле)");
+                            }
+
+                            _lastVpnTransportFingerprint = vpnTransportFp;
+                        }
 
                         // Первый тик ещё не знает базовый контур — фиксируем текущий снимок без ожидания debounce.
                         _acceptedFingerprint ??= fingerprint;
@@ -252,7 +268,7 @@ namespace VpnSpeedAnalyzer.Logic
 
                         var firstMeasurement = _lastSpeedtestUtc == DateTime.MinValue;
 
-                        var automaticTrigger = firstMeasurement || topologyConfirmed || egressIpChanged || intervalElapsed;
+                        var automaticTrigger = firstMeasurement || topologyConfirmed || egressIpChanged || vpnTransportChanged || intervalElapsed;
                         var userRequested = _forceRunRequested;
                         var autoGapTooShort = !firstMeasurement
                                               && !intervalElapsed
@@ -260,7 +276,7 @@ namespace VpnSpeedAnalyzer.Logic
                         var shouldMeasure = userRequested || (automaticTrigger && !autoGapTooShort);
 
                         Logger.Write(
-                            $"Тик монитора: topologyConfirmed={topologyConfirmed}, egressIpChanged={egressIpChanged}, " +
+                            $"Тик монитора: topologyConfirmed={topologyConfirmed}, egressIpChanged={egressIpChanged}, vpnTransportChanged={vpnTransportChanged}, " +
                             $"первыйЗамер={firstMeasurement}, прошло={sinceLastMeasurement.TotalSeconds:F0}s, " +
                             $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, run={shouldMeasure}");
 
@@ -272,6 +288,8 @@ namespace VpnSpeedAnalyzer.Logic
                                     ? "смена сетевого контура"
                                     : egressIpChanged
                                         ? "смена публичного IP"
+                                        : vpnTransportChanged
+                                            ? "смена VPN transport"
                                         : firstMeasurement
                                             ? "старт мониторинга"
                                             : "по таймеру";
