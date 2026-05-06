@@ -21,8 +21,11 @@ namespace VpnSpeedAnalyzer.Logic
 
         // Принудительный замер скорости даже без изменения контура — раз в 5 минут.
         private static readonly TimeSpan ForcedRunInterval = TimeSpan.FromMinutes(5);
-        // После локального обнаружения смены хоста ждём 3 секунды стабилизации, затем делаем внешний запрос + замер.
-        private static readonly TimeSpan HostChangeExternalDelay = TimeSpan.FromSeconds(3);
+        // Защита от «дребезга» источников событий: не запускать авто-замеры слишком часто подряд.
+        private static readonly TimeSpan MinAutomaticRunGap = TimeSpan.FromSeconds(5);
+
+        // Резервное обнаружение смены VPN: публичный IP опрашивается реже, если локальный отпечаток не меняется.
+        private const int EgressPollIntervalMs = 20000;
 
         private readonly IIpInfoService _ipService;
         private readonly ISpeedtestService _speedtest;
@@ -37,15 +40,19 @@ namespace VpnSpeedAnalyzer.Logic
         private string? _debounceCandidateFingerprint;
         private DateTime _debounceCandidateSince;
         private string? _lastVpnTransportFingerprint;
-        private DateTime _hostChangeObservedUtc = DateTime.MinValue;
 
         private DateTime _lastSpeedtestUtc = DateTime.MinValue;
 
         private bool _forceRunRequested;
 
+        /// <summary>Последний известный egress IP (гео-API), чтобы ловить смену выхода без смены локального отпечатка.</summary>
+        private string? _lastSeenEgressIp;
+
+        private DateTime _lastEgressPollUtc = DateTime.MinValue;
+
         public event EventHandler<SpeedtestResult>? NewResult;
 
-        /// <summary>Обновление IP/гео только в моменты запроса к внешнему сервису.</summary>
+        /// <summary>Обновление IP/гео после замера или при запросе (не каждый тик локального цикла).</summary>
         public event EventHandler<IpInfo>? IpInfoUpdated;
         public event EventHandler<string>? StatusMessage;
 
@@ -75,7 +82,8 @@ namespace VpnSpeedAnalyzer.Logic
             _acceptedFingerprint = null;
             _debounceCandidateFingerprint = null;
             _lastVpnTransportFingerprint = null;
-            _hostChangeObservedUtc = DateTime.MinValue;
+            _lastSeenEgressIp = null;
+            _lastEgressPollUtc = DateTime.MinValue;
             NetworkChange.NetworkAddressChanged += OnNetworkTopologyHint;
             _cts = new CancellationTokenSource();
             _loopTask = LoopAsync(_cts.Token);
@@ -94,8 +102,9 @@ namespace VpnSpeedAnalyzer.Logic
 
             NetworkChange.NetworkAddressChanged -= OnNetworkTopologyHint;
 
+            _lastSeenEgressIp = null;
+            _lastEgressPollUtc = DateTime.MinValue;
             _lastVpnTransportFingerprint = null;
-            _hostChangeObservedUtc = DateTime.MinValue;
 
             var cts = _cts;
             _cts = null;
@@ -222,37 +231,62 @@ namespace VpnSpeedAnalyzer.Logic
                         _acceptedFingerprint ??= fingerprint;
 
                         var utcNow = DateTime.UtcNow;
-                        var hostChangeSignal = topologyConfirmed || vpnTransportChanged;
-                        if (hostChangeSignal)
+                        var egressIpChanged = false;
+                        if ((utcNow - _lastEgressPollUtc).TotalMilliseconds >= EgressPollIntervalMs
+                            || _lastEgressPollUtc == DateTime.MinValue)
                         {
-                            // Если за 3 секунды пришла новая смена, таймер стабилизации начинается заново.
-                            _hostChangeObservedUtc = utcNow;
-                            Logger.Write("Зафиксирована локальная смена хоста: ждём 3 сек перед внешним запросом и замером");
+                            _lastEgressPollUtc = utcNow;
+                            try
+                            {
+                                var ipSnap = await _ipService.GetCurrentAsync().ConfigureAwait(false);
+                                if (ipSnap?.Ip is { Length: > 0 } ipCur)
+                                {
+                                    if (_lastSeenEgressIp != null
+                                        && !_lastSeenEgressIp.Equals(ipCur, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        egressIpChanged = true;
+                                        Logger.Write($"Смена egress IP (опрос {EgressPollIntervalMs}мс): {_lastSeenEgressIp} → {ipCur}");
+                                        IpInfoUpdated?.Invoke(this, ipSnap);
+                                    }
+                                    else if (_lastSeenEgressIp == null)
+                                    {
+                                        IpInfoUpdated?.Invoke(this, ipSnap);
+                                    }
+
+                                    _lastSeenEgressIp = ipCur;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Write($"Опрос egress IP: {ex.Message}");
+                            }
                         }
 
                         var sinceLastMeasurement = utcNow - _lastSpeedtestUtc;
                         var intervalElapsed = sinceLastMeasurement >= ForcedRunInterval;
                         var firstMeasurement = _lastSpeedtestUtc == DateTime.MinValue;
                         var userRequested = _forceRunRequested;
-                        var hostChangeReady = _hostChangeObservedUtc != DateTime.MinValue
-                                              && (utcNow - _hostChangeObservedUtc) >= HostChangeExternalDelay;
-                        var shouldMeasure = userRequested || firstMeasurement || hostChangeReady || intervalElapsed;
+                        var automaticTrigger = firstMeasurement || topologyConfirmed || egressIpChanged || vpnTransportChanged || intervalElapsed;
+                        var autoGapTooShort = !firstMeasurement
+                                              && !intervalElapsed
+                                              && sinceLastMeasurement < MinAutomaticRunGap;
+                        var shouldMeasure = userRequested || (automaticTrigger && !autoGapTooShort);
 
                         Logger.Write(
-                            $"Тик монитора: topologyConfirmed={topologyConfirmed}, vpnTransportChanged={vpnTransportChanged}, hostChangeReady={hostChangeReady}, " +
+                            $"Тик монитора: topologyConfirmed={topologyConfirmed}, egressIpChanged={egressIpChanged}, vpnTransportChanged={vpnTransportChanged}, " +
                             $"первыйЗамер={firstMeasurement}, прошло={sinceLastMeasurement.TotalSeconds:F0}s, " +
-                            $"intervalElapsed={intervalElapsed}, force={userRequested}, run={shouldMeasure}");
+                            $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, run={shouldMeasure}");
 
                         if (shouldMeasure)
                         {
-                            IpInfo? geo = null;
-                            var hostChangePlanned = hostChangeReady;
-                            _hostChangeObservedUtc = DateTime.MinValue;
-
                             var reasonText = userRequested
                                 ? "по запросу"
-                                : hostChangePlanned
-                                    ? "смена хоста"
+                                : topologyConfirmed
+                                    ? "смена сетевого контура"
+                                    : egressIpChanged
+                                        ? "смена публичного IP"
+                                        : vpnTransportChanged
+                                            ? "смена VPN transport"
                                         : firstMeasurement
                                             ? "старт мониторинга"
                                             : "по таймеру";
@@ -260,19 +294,6 @@ namespace VpnSpeedAnalyzer.Logic
                             StatusMessage?.Invoke(this, $"CHECK:Замер скорости ({reasonText})");
                             Logger.Write($"Запускаем тест скорости: {reasonText}");
                             _forceRunRequested = false;
-                            if (hostChangePlanned)
-                            {
-                                try
-                                {
-                                    geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
-                                    if (geo != null)
-                                        IpInfoUpdated?.Invoke(this, geo);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Logger.Write($"Внешний запрос при смене хоста: {ex.Message}");
-                                }
-                            }
 
                             var speedProgress = new Progress<double>(p => SpeedtestProgress?.Invoke(this, p));
                             var result = await _speedtest.RunAsync(speedProgress, token).ConfigureAwait(false);
@@ -282,6 +303,9 @@ namespace VpnSpeedAnalyzer.Logic
 
                             if (result != null)
                             {
+                                // Обогащаем результат геоданными (один HTTP на замер — с текущим выходом в интернет после VPN).
+                                var geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
+
                                 MergeGeoIntoResult(result, geo);
 
                                 var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName)
@@ -318,17 +342,14 @@ namespace VpnSpeedAnalyzer.Logic
                         }
                         else
                         {
-                            if (_hostChangeObservedUtc != DateTime.MinValue)
+                            if (autoGapTooShort)
                             {
-                                var waitLeft = HostChangeExternalDelay - (utcNow - _hostChangeObservedUtc);
-                                if (waitLeft < TimeSpan.Zero)
-                                    waitLeft = TimeSpan.Zero;
                                 Logger.Write(
-                                    $"Замер отложен: ждём стабилизацию смены хоста ещё {waitLeft.TotalMilliseconds:F0} мс");
+                                    $"Замер пропущен: анти-дребезг автозапуска (прошло {sinceLastMeasurement.TotalSeconds:F0}с, минимум {MinAutomaticRunGap.TotalSeconds:F0}с)");
                             }
                             else
                             {
-                                Logger.Write("Замер пропущен: изменений хоста нет и таймер не истёк");
+                                Logger.Write("Замер пропущен: контур стабилен и таймер не истёк");
                             }
                         }
 
