@@ -112,7 +112,7 @@
 
         <Style x:Key="TopNavButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Width" Value="130"/>
-            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Margin" Value="0"/>
         </Style>
 
         <Style TargetType="DataGrid">
@@ -410,19 +410,18 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <DockPanel Margin="8,0,8,0" LastChildFill="False">
+        <DockPanel Margin="8,0,8,8" LastChildFill="False">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                 <Button Content="Мониторинг"
                         Command="{Binding ShowMonitoringTabCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
+                            <Setter Property="Margin" Value="0,0,10,0"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsMonitoringTabSelected}" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+                                    <Setter Property="Background" Value="#2C3255"/>
                                     <Setter Property="BorderBrush" Value="#59D9B7"/>
                                     <Setter Property="Foreground" Value="#59D9B7"/>
-                                    <Setter Property="BorderThickness" Value="1,1,1,0"/>
-                                    <Setter Property="Margin" Value="0,0,8,-1"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -432,14 +431,11 @@
                         Command="{Binding ShowAnalyticsTabCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
-                            <Setter Property="Margin" Value="0"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsAnalyticsTabSelected}" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+                                    <Setter Property="Background" Value="#2C3255"/>
                                     <Setter Property="BorderBrush" Value="#59D9B7"/>
                                     <Setter Property="Foreground" Value="#59D9B7"/>
-                                    <Setter Property="BorderThickness" Value="1,1,1,0"/>
-                                    <Setter Property="Margin" Value="0,0,0,-1"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -668,27 +664,27 @@
                         </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="1" Margin="0,10,0,10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <UniformGrid Rows="1" Columns="4" Margin="0,0,0,10">
-                            <GroupBox Header="Всего замеров" Margin="0,0,8,0">
+                            <GroupBox Header="Всего замеров" Margin="0,0,10,0">
                                 <TextBlock Text="{Binding TotalMeasurements}"
                                            Foreground="{StaticResource TextBrush}"
                                            FontSize="22"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Left"/>
                             </GroupBox>
-                            <GroupBox Header="Уникальных хостов" Margin="0,0,8,0">
+                            <GroupBox Header="Уникальных хостов" Margin="0,0,10,0">
                                 <TextBlock Text="{Binding UniqueHostsCount}"
                                            Foreground="{StaticResource TextBrush}"
                                            FontSize="22"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Left"/>
                             </GroupBox>
-                            <GroupBox Header="Средний D.Q.S" Margin="0,0,8,0">
+                            <GroupBox Header="Средний D.Q.S" Margin="0,0,10,0">
                                 <TextBlock Text="{Binding AverageScore, StringFormat=F2}"
                                            Foreground="{StaticResource OkBrush}"
                                            FontSize="22"
@@ -740,8 +736,8 @@
         </TabControl>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-            <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Command="{Binding ToggleMonitoringCommand}"/>
-            <Button Content="{Binding ActiveExportButtonText}" Width="150" Command="{Binding ActiveExportCommand}"/>
+            <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Margin="0,0,10,0" Command="{Binding ToggleMonitoringCommand}"/>
+            <Button Content="{Binding ActiveExportButtonText}" Width="150" Margin="0" Command="{Binding ActiveExportCommand}"/>
         </StackPanel>
     </Grid>
 </Window>
