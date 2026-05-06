@@ -20,7 +20,7 @@ namespace VpnSpeedAnalyzer
         private const string ProfileUniversal = "Универсальный";
         private const string ProfileGaming = "Игры";
         private const string ProfileStreaming = "Стрим";
-        private const int TopHostsCount = 5;
+        private const int TopHostsCount = 3;
 
         private readonly MonitorController _monitor;
         private readonly ResultsManager _resultsManager;

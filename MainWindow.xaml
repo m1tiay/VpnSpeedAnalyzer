@@ -515,7 +515,7 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <DataGrid ItemsSource="{Binding TopHosts}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
+                            <DataGrid ItemsSource="{Binding TopHosts}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">
                                     <Setter Property="Background" Value="#1D2033"/>
