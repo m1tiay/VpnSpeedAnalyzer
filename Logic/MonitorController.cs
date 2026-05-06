@@ -21,7 +21,13 @@ namespace VpnSpeedAnalyzer.Logic
         // Стабилизация fingerprint transport-соединений, чтобы не реагировать на краткие колебания после speedtest.
         private const int VpnTransportDebounceMs = 2500;
         // Минимально значимое изменение transport fingerprint (симметричная разница endpoint'ов).
-        private const int VpnTransportMinDeltaEndpoints = 4;
+        private const int VpnTransportMinDeltaEndpoints = 6;
+        // После подтверждённой смены игнорируем «хвост» перестроения transport-соединений.
+        private static readonly TimeSpan VpnTransportChangeCooldown = TimeSpan.FromSeconds(90);
+        // Во время cooldown пропускаем только действительно крупные перестроения (вторая реальная смена хоста).
+        private const int VpnTransportCooldownOverrideDeltaEndpoints = 12;
+        // Крупный разовый скачок обычно соответствует ручной смене хоста (первичная волна).
+        private const int VpnTransportPrimaryDeltaEndpoints = 20;
 
         // Принудительный замер скорости даже без изменения контура — раз в 5 минут.
         private static readonly TimeSpan ForcedRunInterval = TimeSpan.FromMinutes(5);
@@ -42,6 +48,7 @@ namespace VpnSpeedAnalyzer.Logic
         private string _vpnTopProcessLabel = "процесс: —";
 
         private DateTime _lastSpeedtestUtc = DateTime.MinValue;
+        private DateTime _lastConfirmedVpnTransportChangeUtc = DateTime.MinValue;
 
         private bool _forceRunRequested;
         private bool _isMeasurementInFlight;
@@ -81,6 +88,7 @@ namespace VpnSpeedAnalyzer.Logic
             _vpnTopProcessId = 0;
             _vpnTopProcessLabel = "процесс: —";
             _isMeasurementInFlight = false;
+            _lastConfirmedVpnTransportChangeUtc = DateTime.MinValue;
             VpnProcessInfoUpdated?.Invoke(this, _vpnTopProcessLabel);
             _cts = new CancellationTokenSource();
             _loopTask = LoopAsync(_cts.Token);
@@ -102,6 +110,7 @@ namespace VpnSpeedAnalyzer.Logic
             _vpnTopProcessId = 0;
             _vpnTopProcessLabel = "процесс: —";
             _isMeasurementInFlight = false;
+            _lastConfirmedVpnTransportChangeUtc = DateTime.MinValue;
             VpnProcessInfoUpdated?.Invoke(this, _vpnTopProcessLabel);
 
             var cts = _cts;
@@ -189,6 +198,23 @@ namespace VpnSpeedAnalyzer.Logic
                 return false;
             }
 
+            var switchClass = ClassifyHostSwitch(delta);
+
+            var nowUtc = DateTime.UtcNow;
+            if (_lastConfirmedVpnTransportChangeUtc != DateTime.MinValue)
+            {
+                var elapsedSinceLastConfirm = nowUtc - _lastConfirmedVpnTransportChangeUtc;
+                if (elapsedSinceLastConfirm < VpnTransportChangeCooldown
+                    && delta < VpnTransportCooldownOverrideDeltaEndpoints)
+                {
+                    _vpnDebounceChangeInProgress = false;
+                    var leftSec = (VpnTransportChangeCooldown - elapsedSinceLastConfirm).TotalSeconds;
+                    decisionLog =
+                        $"cooldown: class={switchClass}, delta={delta} < override={VpnTransportCooldownOverrideDeltaEndpoints}, осталось {leftSec:F0}с";
+                    return false;
+                }
+            }
+
             // Подтверждаем не «одинаковый снимок», а устойчивое состояние «delta >= порога».
             // Это важно для клиентов, где при реальной смене хоста endpoint'ы продолжают
             // достраиваться несколько секунд и fingerprint меняется на каждом тике.
@@ -197,7 +223,7 @@ namespace VpnSpeedAnalyzer.Logic
                 _vpnDebounceChangeInProgress = true;
                 _vpnDebounceCandidateSince = DateTime.UtcNow;
                 decisionLog =
-                    $"значимое изменение: delta={delta}, старт debounce={VpnTransportDebounceMs}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
+                    $"значимое изменение: class={switchClass}, delta={delta}, старт debounce={VpnTransportDebounceMs}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
                 return false;
             }
 
@@ -205,15 +231,21 @@ namespace VpnSpeedAnalyzer.Logic
             if (waitedMs < VpnTransportDebounceMs)
             {
                 decisionLog =
-                    $"debounce: delta={delta}, ждём {waitedMs:F0}/{VpnTransportDebounceMs}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
+                    $"debounce: class={switchClass}, delta={delta}, ждём {waitedMs:F0}/{VpnTransportDebounceMs}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
                 return false;
             }
 
             _lastVpnTransportFingerprint = fingerprint;
             _vpnDebounceChangeInProgress = false;
+            _lastConfirmedVpnTransportChangeUtc = nowUtc;
             decisionLog =
-                $"смена подтверждена: delta={delta}, выдержка={waitedMs:F0}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
+                $"смена подтверждена: class={switchClass}, delta={delta}, выдержка={waitedMs:F0}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
             return true;
+        }
+
+        private static string ClassifyHostSwitch(int delta)
+        {
+            return delta >= VpnTransportPrimaryDeltaEndpoints ? "PRIMARY" : "TAIL";
         }
 
         private static int CountEndpointDelta(string previous, string current)
