@@ -421,6 +421,7 @@
                                     <Setter Property="Background" Value="#2C3255"/>
                                     <Setter Property="BorderBrush" Value="#59D9B7"/>
                                     <Setter Property="Foreground" Value="#59D9B7"/>
+                                    <Setter Property="Margin" Value="0,0,8,-6"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -436,6 +437,7 @@
                                     <Setter Property="Background" Value="#2C3255"/>
                                     <Setter Property="BorderBrush" Value="#59D9B7"/>
                                     <Setter Property="Foreground" Value="#59D9B7"/>
+                                    <Setter Property="Margin" Value="0,0,0,-6"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -443,12 +445,12 @@
                 </Button>
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Top">
                 <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox Width="{Binding ScoringProfileComboWidth}"
-                          Height="28"
+                          Height="30"
                           Margin="0"
-                          VerticalAlignment="Center"
+                          VerticalAlignment="Top"
                           ItemsSource="{Binding ScoringProfiles}"
                           SelectedItem="{Binding SelectedScoringProfile}"/>
             </StackPanel>
@@ -467,7 +469,7 @@
                         <RowDefinition Height="2.1*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
+                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,-2,0,10">
                         <DockPanel LastChildFill="True">
                             <Grid DockPanel.Dock="Left" VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
@@ -645,7 +647,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
+                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,-2,0,10">
                         <DockPanel LastChildFill="False">
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
                                 <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
@@ -669,32 +671,28 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <UniformGrid Rows="1" Columns="4" Margin="0,0,0,10">
-                            <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10" Margin="0,0,8,0">
-                                <StackPanel>
-                                    <TextBlock Text="Всего замеров" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
-                                    <TextBlock Text="{Binding TotalMeasurements}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10" Margin="0,0,8,0">
-                                <StackPanel>
-                                    <TextBlock Text="Уникальных хостов" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
-                                    <TextBlock Text="{Binding UniqueHostsCount}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10" Margin="0,0,8,0">
-                                <StackPanel>
-                                    <TextBlock Text="Средний D.Q.S" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
-                                    <TextBlock Text="{Binding AverageScore, StringFormat=F2}" Foreground="{StaticResource OkBrush}" FontSize="22" FontWeight="Bold"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10">
-                                <StackPanel>
-                                    <TextBlock Text="Средний пинг (мс)" Foreground="{StaticResource MutedTextBrush}" FontSize="11"/>
-                                    <TextBlock Text="{Binding AveragePing, StringFormat=F2}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold"/>
-                                </StackPanel>
-                            </Border>
-                        </UniformGrid>
+                        <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
+                            <Grid VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Всего замеров:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding TotalMeasurements}" Margin="0,0,20,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="2" Text="Уникальных хостов:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="{Binding UniqueHostsCount}" Margin="0,0,20,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="4" Text="Средний D.Q.S:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="5" Text="{Binding AverageScore, StringFormat=F2}" Margin="0,0,20,0" Foreground="{StaticResource OkBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="6" Text="Средний пинг (мс):" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="7" Text="{Binding AveragePing, StringFormat=F2}" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            </Grid>
+                        </Border>
 
                         <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="10">
                             <Grid>
