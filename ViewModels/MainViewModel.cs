@@ -55,6 +55,7 @@ namespace VpnSpeedAnalyzer
         private string _ratingSummaryText = "Недостаточно данных для аналитики";
         private string _stabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
         private string _bestHostSummaryText = "Лучший хост появится после первого успешного замера";
+        private string _vpnProcessInfoText = "процесс: —";
 
         private HostRatingRow? _selectedHostRatingRow;
 
@@ -296,6 +297,19 @@ namespace VpnSpeedAnalyzer
             }
         }
 
+        public string VpnProcessInfoText
+        {
+            get => _vpnProcessInfoText;
+            set
+            {
+                if (_vpnProcessInfoText != value)
+                {
+                    _vpnProcessInfoText = value;
+                    NotifyPropertyChanged(nameof(VpnProcessInfoText));
+                }
+            }
+        }
+
         public int TotalMeasurements => Results.Count;
         public int UniqueHostsCount => HostRatings.Count;
 
@@ -462,6 +476,8 @@ namespace VpnSpeedAnalyzer
                 Logger.Write("ViewModel: Monitor.NewResult подписана");
                 _monitor.IpInfoUpdated += Monitor_IpInfoUpdated;
                 Logger.Write("ViewModel: Monitor.IpInfoUpdated подписана");
+                _monitor.VpnProcessInfoUpdated += Monitor_VpnProcessInfoUpdated;
+                Logger.Write("ViewModel: Monitor.VpnProcessInfoUpdated подписана");
                 _monitor.StatusMessage += Monitor_StatusMessage;
                 Logger.Write("ViewModel: Monitor.StatusMessage подписана");
                 _monitor.SpeedtestProgress += Monitor_SpeedtestProgress;
@@ -546,6 +562,14 @@ namespace VpnSpeedAnalyzer
                 CurrentIp = info.Ip;
                 CurrentCountry = string.IsNullOrWhiteSpace(info.CountryName) ? CurrentCountry : info.CountryName;
                 CurrentAsn = string.IsNullOrWhiteSpace(info.Asn) ? "N/A" : info.Asn;
+            });
+        }
+
+        private void Monitor_VpnProcessInfoUpdated(object? sender, string text)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                VpnProcessInfoText = string.IsNullOrWhiteSpace(text) ? "процесс: —" : text;
             });
         }
 

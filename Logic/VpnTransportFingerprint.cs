@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 namespace VpnSpeedAnalyzer.Logic
 {
@@ -12,48 +14,66 @@ namespace VpnSpeedAnalyzer.Logic
     /// </summary>
     public static class VpnTransportFingerprint
     {
-        public static string Compute()
+        private const int AfInet = 2;
+        private const int TcpTableOwnerPidAll = 5;
+        private const uint ErrorInsufficientBuffer = 122;
+        private const uint TcpStateEstablished = 5;
+
+        public sealed class TopProcessSnapshot
+        {
+            public int ProcessId { get; init; }
+            public int ConnectionCount { get; init; }
+            public string Fingerprint { get; init; } = string.Empty;
+        }
+
+        public static TopProcessSnapshot? GetTopProcessSnapshot(int preferredProcessId = 0)
         {
             try
             {
                 var tunnelIps = CollectTunnelIpv4Addresses();
                 if (tunnelIps.Count == 0)
-                    return string.Empty;
+                    return null;
 
-                var entries = new List<string>(16);
-                foreach (var c in IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections())
+                var rows = GetTcpRowsOwnerPid();
+                var tunnelRows = rows
+                    .Where(r => r.State == TcpStateEstablished)
+                    .Where(r => tunnelIps.Contains(r.LocalAddress))
+                    .Where(r => r.RemoteAddress.AddressFamily == AddressFamily.InterNetwork)
+                    .Where(r => !IPAddress.IsLoopback(r.RemoteAddress))
+                    .ToList();
+
+                if (tunnelRows.Count == 0)
+                    return null;
+
+                var targetPid = preferredProcessId > 0
+                                && tunnelRows.Any(r => r.ProcessId == preferredProcessId)
+                    ? preferredProcessId
+                    : tunnelRows.GroupBy(r => r.ProcessId)
+                        .OrderByDescending(g => g.Count())
+                        .ThenBy(g => g.Key)
+                        .First().Key;
+
+                var forPid = tunnelRows.Where(r => r.ProcessId == targetPid).ToList();
+                if (forPid.Count == 0)
+                    return null;
+
+                var endpoints = forPid
+                    .Select(r => $"{r.RemoteAddress}:{r.RemotePort}")
+                    .Distinct(StringComparer.Ordinal)
+                    .OrderBy(x => x, StringComparer.Ordinal)
+                    .ToList();
+
+                return new TopProcessSnapshot
                 {
-                    if (c.State != TcpState.Established)
-                        continue;
-
-                    if (c.LocalEndPoint.Address.AddressFamily != AddressFamily.InterNetwork)
-                        continue;
-
-                    if (!tunnelIps.Contains(c.LocalEndPoint.Address))
-                        continue;
-
-                    var remote = c.RemoteEndPoint.Address;
-                    if (remote.AddressFamily != AddressFamily.InterNetwork)
-                        continue;
-
-                    if (IPAddress.IsLoopback(remote))
-                        continue;
-                    if (IsPrivateOrSpecial(remote))
-                        continue;
-
-                    entries.Add($"{remote}:{c.RemoteEndPoint.Port}");
-                }
-
-                if (entries.Count == 0)
-                    return string.Empty;
-
-                entries.Sort(StringComparer.Ordinal);
-                return string.Join("|", entries.Distinct(StringComparer.Ordinal));
+                    ProcessId = targetPid,
+                    ConnectionCount = forPid.Count,
+                    Fingerprint = string.Join("|", endpoints)
+                };
             }
             catch (Exception ex)
             {
                 Logger.Write($"VPN fingerprint error: {ex.GetType().Name}: {ex.Message}");
-                return string.Empty;
+                return null;
             }
         }
 
@@ -81,22 +101,52 @@ namespace VpnSpeedAnalyzer.Logic
             return result;
         }
 
-        private static bool IsPrivateOrSpecial(IPAddress ip)
+        private static List<TcpRowOwnerPid> GetTcpRowsOwnerPid()
         {
-            var b = ip.GetAddressBytes();
-            // 10.0.0.0/8
-            if (b[0] == 10) return true;
-            // 172.16.0.0/12
-            if (b[0] == 172 && b[1] >= 16 && b[1] <= 31) return true;
-            // 192.168.0.0/16
-            if (b[0] == 192 && b[1] == 168) return true;
-            // CGNAT 100.64.0.0/10
-            if (b[0] == 100 && b[1] >= 64 && b[1] <= 127) return true;
-            // Link-local 169.254.0.0/16
-            if (b[0] == 169 && b[1] == 254) return true;
-            // Benchmark/testing 198.18.0.0/15
-            if (b[0] == 198 && (b[1] == 18 || b[1] == 19)) return true;
-            return false;
+            var result = new List<TcpRowOwnerPid>(128);
+            var size = 0;
+            var ret = GetExtendedTcpTable(IntPtr.Zero, ref size, true, AfInet, TcpTableOwnerPidAll, 0);
+            if (ret != ErrorInsufficientBuffer || size <= 0)
+                return result;
+
+            var ptr = Marshal.AllocHGlobal(size);
+            try
+            {
+                ret = GetExtendedTcpTable(ptr, ref size, true, AfInet, TcpTableOwnerPidAll, 0);
+                if (ret != 0)
+                    return result;
+
+                var numEntries = Marshal.ReadInt32(ptr);
+                var rowPtr = IntPtr.Add(ptr, 4);
+                var rowSize = Marshal.SizeOf<MibTcpRowOwnerPid>();
+
+                for (var i = 0; i < numEntries; i++)
+                {
+                    var row = Marshal.PtrToStructure<MibTcpRowOwnerPid>(rowPtr);
+                    rowPtr = IntPtr.Add(rowPtr, rowSize);
+
+                    var localAddress = new IPAddress(row.LocalAddr);
+                    var remoteAddress = new IPAddress(row.RemoteAddr);
+                    var localPort = ConvertPort(row.LocalPort);
+                    var remotePort = ConvertPort(row.RemotePort);
+
+                    result.Add(new TcpRowOwnerPid
+                    {
+                        State = row.State,
+                        LocalAddress = localAddress,
+                        LocalPort = localPort,
+                        RemoteAddress = remoteAddress,
+                        RemotePort = remotePort,
+                        ProcessId = (int)row.OwningPid
+                    });
+                }
+
+                return result;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
         }
 
         private static bool LooksLikeVpnInterface(NetworkInterface nic)
@@ -111,6 +161,41 @@ namespace VpnSpeedAnalyzer.Logic
                    || text.Contains("tap")
                    || text.Contains("tun")
                    || text.Contains("vpn");
+        }
+
+        private static int ConvertPort(uint rawPort)
+        {
+            return (int)IPAddress.NetworkToHostOrder((short)((rawPort & 0xFFFF0000) >> 16));
+        }
+
+        [DllImport("iphlpapi.dll", SetLastError = true)]
+        private static extern uint GetExtendedTcpTable(
+            IntPtr pTcpTable,
+            ref int dwOutBufLen,
+            bool sort,
+            int ipVersion,
+            int tblClass,
+            uint reserved);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MibTcpRowOwnerPid
+        {
+            public uint State;
+            public uint LocalAddr;
+            public uint LocalPort;
+            public uint RemoteAddr;
+            public uint RemotePort;
+            public uint OwningPid;
+        }
+
+        private sealed class TcpRowOwnerPid
+        {
+            public uint State { get; init; }
+            public IPAddress LocalAddress { get; init; } = IPAddress.None;
+            public int LocalPort { get; init; }
+            public IPAddress RemoteAddress { get; init; } = IPAddress.None;
+            public int RemotePort { get; init; }
+            public int ProcessId { get; init; }
         }
     }
 }

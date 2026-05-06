@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using VpnSpeedAnalyzer.Models;
@@ -18,8 +18,6 @@ namespace VpnSpeedAnalyzer.Logic
         // реакция на смену VPN/Wi‑Fi быстрее, чем периодический опрос только IP через API.
         private const int LocalPollIntervalMs = 400;
 
-        // Сколько миллисекунд новый отпечаток должен оставаться неизменным, чтобы не ловить кратковременные «дёргания» DHCP/интерфейсов.
-        private const int TopologyDebounceMs = 1200;
         // Стабилизация fingerprint transport-соединений, чтобы не реагировать на краткие колебания после speedtest.
         private const int VpnTransportDebounceMs = 2500;
         // Минимально значимое изменение transport fingerprint (симметричная разница endpoint'ов).
@@ -30,9 +28,6 @@ namespace VpnSpeedAnalyzer.Logic
         // Защита от «дребезга» источников событий: не запускать авто-замеры слишком часто подряд.
         private static readonly TimeSpan MinAutomaticRunGap = TimeSpan.FromSeconds(5);
 
-        // Резервное обнаружение смены VPN: публичный IP опрашивается реже, если локальный отпечаток не меняется.
-        private const int EgressPollIntervalMs = 20000;
-
         private readonly IIpInfoService _ipService;
         private readonly ISpeedtestService _speedtest;
 
@@ -40,29 +35,22 @@ namespace VpnSpeedAnalyzer.Logic
         private CancellationTokenSource? _delayCts;
         private Task? _loopTask;
 
-        /// <summary>Принятый «стабильный» снимок контура после старта или последней подтверждённой смены.</summary>
-        private string? _acceptedFingerprint;
-
-        private string? _debounceCandidateFingerprint;
-        private DateTime _debounceCandidateSince;
         private string? _lastVpnTransportFingerprint;
         private string? _vpnDebounceCandidateFingerprint;
         private DateTime _vpnDebounceCandidateSince;
+        private int _vpnTopProcessId;
+        private string _vpnTopProcessLabel = "процесс: —";
 
         private DateTime _lastSpeedtestUtc = DateTime.MinValue;
 
         private bool _forceRunRequested;
         private bool _isMeasurementInFlight;
 
-        /// <summary>Последний известный egress IP (гео-API), чтобы ловить смену выхода без смены локального отпечатка.</summary>
-        private string? _lastSeenEgressIp;
-
-        private DateTime _lastEgressPollUtc = DateTime.MinValue;
-
         public event EventHandler<SpeedtestResult>? NewResult;
 
         /// <summary>Обновление IP/гео после замера или при запросе (не каждый тик локального цикла).</summary>
         public event EventHandler<IpInfo>? IpInfoUpdated;
+        public event EventHandler<string>? VpnProcessInfoUpdated;
         public event EventHandler<string>? StatusMessage;
 
         /// <summary>Проценты 0..100 хода speedtest (stderr/фазовая оценка).</summary>
@@ -88,14 +76,12 @@ namespace VpnSpeedAnalyzer.Logic
                 return;
             }
 
-            _acceptedFingerprint = null;
-            _debounceCandidateFingerprint = null;
             _lastVpnTransportFingerprint = null;
             _vpnDebounceCandidateFingerprint = null;
-            _lastSeenEgressIp = null;
-            _lastEgressPollUtc = DateTime.MinValue;
+            _vpnTopProcessId = 0;
+            _vpnTopProcessLabel = "процесс: —";
             _isMeasurementInFlight = false;
-            NetworkChange.NetworkAddressChanged += OnNetworkTopologyHint;
+            VpnProcessInfoUpdated?.Invoke(this, _vpnTopProcessLabel);
             _cts = new CancellationTokenSource();
             _loopTask = LoopAsync(_cts.Token);
         }
@@ -111,13 +97,12 @@ namespace VpnSpeedAnalyzer.Logic
                 return;
             }
 
-            NetworkChange.NetworkAddressChanged -= OnNetworkTopologyHint;
-
-            _lastSeenEgressIp = null;
-            _lastEgressPollUtc = DateTime.MinValue;
             _lastVpnTransportFingerprint = null;
             _vpnDebounceCandidateFingerprint = null;
+            _vpnTopProcessId = 0;
+            _vpnTopProcessLabel = "процесс: —";
             _isMeasurementInFlight = false;
+            VpnProcessInfoUpdated?.Invoke(this, _vpnTopProcessLabel);
 
             var cts = _cts;
             _cts = null;
@@ -164,55 +149,6 @@ namespace VpnSpeedAnalyzer.Logic
         public void Dispose()
         {
             Stop();
-        }
-
-        /// <summary>
-        /// Событие ОС об изменении адресов: ускоряем следующее сравнение отпечатка.
-        /// </summary>
-        private void OnNetworkTopologyHint(object? sender, EventArgs e)
-        {
-            if (_isMeasurementInFlight)
-                return;
-
-            try
-            {
-                _delayCts?.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-        }
-
-        /// <summary>
-        /// True, если отпечаток отличается от принятого и не менялся не меньше <see cref="TopologyDebounceMs"/> мс.
-        /// </summary>
-        private bool TryConfirmTopologyChange(string fingerprint)
-        {
-            if (_acceptedFingerprint == null)
-                return false;
-
-            if (string.Equals(fingerprint, _acceptedFingerprint, StringComparison.Ordinal))
-            {
-                _debounceCandidateFingerprint = null;
-                return false;
-            }
-
-            if (!string.Equals(fingerprint, _debounceCandidateFingerprint, StringComparison.Ordinal))
-            {
-                _debounceCandidateFingerprint = fingerprint;
-                _debounceCandidateSince = DateTime.UtcNow;
-                Logger.Write("Сеть: новый отпечаток контура — ждём стабилизацию перед замером");
-                return false;
-            }
-
-            var waitedMs = (DateTime.UtcNow - _debounceCandidateSince).TotalMilliseconds;
-            if (waitedMs < TopologyDebounceMs)
-                return false;
-
-            Logger.Write($"Сеть: смена контура подтверждена после {waitedMs:F0} мс стабильного отпечатка");
-            _acceptedFingerprint = fingerprint;
-            _debounceCandidateFingerprint = null;
-            return true;
         }
 
         /// <summary>
@@ -295,59 +231,31 @@ namespace VpnSpeedAnalyzer.Logic
                 {
                     try
                     {
-                        var fingerprint = LocalNetworkFingerprint.Compute();
+                        var vpnSnapshot = VpnTransportFingerprint.GetTopProcessSnapshot(_vpnTopProcessId);
+                        if (vpnSnapshot != null && vpnSnapshot.ProcessId != _vpnTopProcessId)
+                        {
+                            Logger.Write($"VPN transport: выбран PID {vpnSnapshot.ProcessId} (соединений: {vpnSnapshot.ConnectionCount})");
+                            _vpnTopProcessId = vpnSnapshot.ProcessId;
+                            UpdateVpnProcessLabel(vpnSnapshot.ProcessId);
+                        }
 
-                        var topologyConfirmed = TryConfirmTopologyChange(fingerprint);
-                        var vpnTransportFp = VpnTransportFingerprint.Compute();
-                        var vpnTransportChanged = TryConfirmVpnTransportChange(vpnTransportFp);
-
-                        // Первый тик ещё не знает базовый контур — фиксируем текущий снимок без ожидания debounce.
-                        _acceptedFingerprint ??= fingerprint;
+                        var vpnTransportChanged = vpnSnapshot != null
+                            && TryConfirmVpnTransportChange(vpnSnapshot.Fingerprint);
 
                         var utcNow = DateTime.UtcNow;
-                        var egressIpChanged = false;
-                        if ((utcNow - _lastEgressPollUtc).TotalMilliseconds >= EgressPollIntervalMs
-                            || _lastEgressPollUtc == DateTime.MinValue)
-                        {
-                            _lastEgressPollUtc = utcNow;
-                            try
-                            {
-                                var ipSnap = await _ipService.GetCurrentAsync().ConfigureAwait(false);
-                                if (ipSnap?.Ip is { Length: > 0 } ipCur)
-                                {
-                                    if (_lastSeenEgressIp != null
-                                        && !_lastSeenEgressIp.Equals(ipCur, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        egressIpChanged = true;
-                                        Logger.Write($"Смена egress IP (опрос {EgressPollIntervalMs}мс): {_lastSeenEgressIp} → {ipCur}");
-                                        IpInfoUpdated?.Invoke(this, ipSnap);
-                                    }
-                                    else if (_lastSeenEgressIp == null)
-                                    {
-                                        IpInfoUpdated?.Invoke(this, ipSnap);
-                                    }
-
-                                    _lastSeenEgressIp = ipCur;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.Write($"Опрос egress IP: {ex.Message}");
-                            }
-                        }
 
                         var sinceLastMeasurement = utcNow - _lastSpeedtestUtc;
                         var intervalElapsed = sinceLastMeasurement >= ForcedRunInterval;
                         var firstMeasurement = _lastSpeedtestUtc == DateTime.MinValue;
                         var userRequested = _forceRunRequested;
-                        var automaticTrigger = firstMeasurement || topologyConfirmed || egressIpChanged || vpnTransportChanged || intervalElapsed;
+                        var automaticTrigger = firstMeasurement || vpnTransportChanged || intervalElapsed;
                         var autoGapTooShort = !firstMeasurement
                                               && !intervalElapsed
                                               && sinceLastMeasurement < MinAutomaticRunGap;
                         var shouldMeasure = userRequested || (automaticTrigger && !autoGapTooShort);
 
                         Logger.Write(
-                            $"Тик монитора: topologyConfirmed={topologyConfirmed}, egressIpChanged={egressIpChanged}, vpnTransportChanged={vpnTransportChanged}, " +
+                            $"Тик монитора: vpnTransportChanged={vpnTransportChanged}, " +
                             $"первыйЗамер={firstMeasurement}, прошло={sinceLastMeasurement.TotalSeconds:F0}s, " +
                             $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, inFlight={_isMeasurementInFlight}, run={shouldMeasure}");
 
@@ -355,73 +263,68 @@ namespace VpnSpeedAnalyzer.Logic
                         {
                             var reasonText = userRequested
                                 ? "по запросу"
-                                : topologyConfirmed
-                                    ? "смена сетевого контура"
-                                    : egressIpChanged
-                                        ? "смена публичного IP"
-                                        : vpnTransportChanged
-                                            ? "смена VPN transport"
-                                        : firstMeasurement
-                                            ? "старт мониторинга"
-                                            : "по таймеру";
+                                : vpnTransportChanged
+                                    ? "смена VPN transport"
+                                    : firstMeasurement
+                                        ? "старт мониторинга"
+                                        : "по таймеру";
 
                             StatusMessage?.Invoke(this, $"CHECK:Замер скорости ({reasonText})");
                             Logger.Write($"Запускаем тест скорости: {reasonText}");
                             _forceRunRequested = false;
                             _isMeasurementInFlight = true;
 
-                            SpeedtestResult? result;
                             try
                             {
                                 var speedProgress = new Progress<double>(p => SpeedtestProgress?.Invoke(this, p));
-                                result = await _speedtest.RunAsync(speedProgress, token).ConfigureAwait(false);
+                                var result = await _speedtest.RunAsync(speedProgress, token).ConfigureAwait(false);
                                 _lastSpeedtestUtc = DateTime.UtcNow;
+
+                                Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
+
+                                if (result != null)
+                                {
+                                    // Обогащаем результат геоданными (один HTTP на замер — с текущим выходом в интернет после VPN).
+                                    var geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
+
+                                    MergeGeoIntoResult(result, geo);
+
+                                    var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName)
+                                        ? "unknown"
+                                        : _ipService.LastSourceName;
+
+                                    if (geo != null)
+                                    {
+                                        Logger.Write($"Геоданные к замеру: источник={sourceName}, IP(API)={geo.Ip}");
+                                        IpInfoUpdated?.Invoke(this, geo);
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(result.Ip))
+                                    {
+                                        IpInfoUpdated?.Invoke(
+                                            this,
+                                            new IpInfo
+                                            {
+                                                Ip = result.Ip,
+                                                CountryName = string.Empty,
+                                                CountryCode = result.CountryCode,
+                                                Asn = result.Asn
+                                            });
+
+                                        Logger.Write("Гео API недоступен — в UI передан только IP из speedtest");
+                                    }
+
+                                    NewResult?.Invoke(this, result);
+                                }
+                                else
+                                {
+                                    var reason = _speedtest.LastFailureReason ?? "Неизвестная ошибка speedtest";
+                                    StatusMessage?.Invoke(this, $"ERROR:Ошибка замера: {reason}");
+                                }
                             }
                             finally
                             {
                                 _isMeasurementInFlight = false;
                                 RebaselineHostChangeDetectors();
-                            }
-
-                            Logger.Write("Speedtest result: " + (result == null ? "NULL" : "OK"));
-
-                            if (result != null)
-                            {
-                                // Обогащаем результат геоданными (один HTTP на замер — с текущим выходом в интернет после VPN).
-                                var geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
-
-                                MergeGeoIntoResult(result, geo);
-
-                                var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName)
-                                    ? "unknown"
-                                    : _ipService.LastSourceName;
-
-                                if (geo != null)
-                                {
-                                    Logger.Write($"Геоданные к замеру: источник={sourceName}, IP(API)={geo.Ip}");
-                                    IpInfoUpdated?.Invoke(this, geo);
-                                }
-                                else if (!string.IsNullOrWhiteSpace(result.Ip))
-                                {
-                                    IpInfoUpdated?.Invoke(
-                                        this,
-                                        new IpInfo
-                                        {
-                                            Ip = result.Ip,
-                                            CountryName = string.Empty,
-                                            CountryCode = result.CountryCode,
-                                            Asn = result.Asn
-                                        });
-
-                                    Logger.Write("Гео API недоступен — в UI передан только IP из speedtest");
-                                }
-
-                                NewResult?.Invoke(this, result);
-                            }
-                            else
-                            {
-                                var reason = _speedtest.LastFailureReason ?? "Неизвестная ошибка speedtest";
-                                StatusMessage?.Invoke(this, $"ERROR:Ошибка замера: {reason}");
                             }
                         }
                         else
@@ -433,7 +336,7 @@ namespace VpnSpeedAnalyzer.Logic
                             }
                             else
                             {
-                                Logger.Write("Замер пропущен: контур стабилен и таймер не истёк");
+                                Logger.Write("Замер пропущен: VPN transport стабилен и таймер не истёк");
                             }
                         }
 
@@ -447,7 +350,7 @@ namespace VpnSpeedAnalyzer.Logic
                             break;
                         }
 
-                        // Иначе нас просто разбудили через RequestImmediateRun или NetworkAddressChanged — продолжаем цикл.
+                        // Иначе нас просто разбудили через RequestImmediateRun — продолжаем цикл.
                     }
                     catch (Exception ex)
                     {
@@ -500,18 +403,40 @@ namespace VpnSpeedAnalyzer.Logic
         {
             try
             {
-                var topology = LocalNetworkFingerprint.Compute();
-                _acceptedFingerprint = topology;
-                _debounceCandidateFingerprint = null;
-
-                var vpnFp = VpnTransportFingerprint.Compute();
-                _lastVpnTransportFingerprint = string.IsNullOrWhiteSpace(vpnFp) ? _lastVpnTransportFingerprint : vpnFp;
+                var vpnSnapshot = VpnTransportFingerprint.GetTopProcessSnapshot(_vpnTopProcessId);
+                if (vpnSnapshot != null)
+                {
+                    _vpnTopProcessId = vpnSnapshot.ProcessId;
+                    _lastVpnTransportFingerprint = string.IsNullOrWhiteSpace(vpnSnapshot.Fingerprint)
+                        ? _lastVpnTransportFingerprint
+                        : vpnSnapshot.Fingerprint;
+                }
                 _vpnDebounceCandidateFingerprint = null;
             }
             catch (Exception ex)
             {
                 Logger.Write($"Rebaseline detectors: {ex.Message}");
             }
+        }
+
+        private void UpdateVpnProcessLabel(int processId)
+        {
+            var name = "unknown";
+            try
+            {
+                name = Process.GetProcessById(processId).ProcessName;
+            }
+            catch
+            {
+                // Процесс мог завершиться между снимками — оставим unknown.
+            }
+
+            var next = $"{name} ({processId})";
+            if (string.Equals(_vpnTopProcessLabel, next, StringComparison.Ordinal))
+                return;
+
+            _vpnTopProcessLabel = next;
+            VpnProcessInfoUpdated?.Invoke(this, _vpnTopProcessLabel);
         }
 
         private async Task DelayAsync(int milliseconds, CancellationToken token)

@@ -601,6 +601,7 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Top">
+                <TextBlock Text="{Binding VpnProcessInfoText}" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
                 <TextBlock Text="Профиль:" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox Width="{Binding ScoringProfileComboWidth}"
                           Height="30"
