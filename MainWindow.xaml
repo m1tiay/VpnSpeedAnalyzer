@@ -149,7 +149,7 @@
                                         <ColumnDefinition Width="0"/>
                                     </Grid.ColumnDefinitions>
                                     <ContentPresenter Grid.Column="0"
-                                                      Margin="10,0,10,0"
+                                                      Margin="8,0,8,0"
                                                       VerticalAlignment="Center"
                                                       HorizontalAlignment="Left"
                                                       IsHitTestVisible="False"
@@ -232,16 +232,38 @@
         <Style TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="Background" Value="{StaticResource PanelSecondaryBrush}"/>
-            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Padding" Value="0"/>
             <Setter Property="ToolTipService.ShowDuration" Value="120000"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemBorder"
+                                Margin="2"
+                                Padding="6,4"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#2F3458"/>
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#B07DFF"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
-                <Trigger Property="IsHighlighted" Value="True">
-                    <Setter Property="Background" Value="#2F3458"/>
-                </Trigger>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
-                    <Setter Property="Foreground" Value="#FFFFFF"/>
-                </Trigger>
                 <Trigger Property="Content" Value="Универсальный">
                     <Setter Property="ToolTip" Value="Сбалансированный профиль: задержка, стабильность и скорость учитываются равномерно."/>
                 </Trigger>
