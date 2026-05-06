@@ -74,8 +74,8 @@ namespace VpnSpeedAnalyzer
                         maxTextWidth = formattedText.Width;
                 }
 
-                // Текст + внутренние отступы кнопки.
-                var calculatedWidth = maxTextWidth + 28;
+                // Текст + симметричные внутренние отступы + небольшой запас под рамку.
+                var calculatedWidth = maxTextWidth + 22;
                 return Math.Max(120, Math.Ceiling(calculatedWidth));
             }
         }

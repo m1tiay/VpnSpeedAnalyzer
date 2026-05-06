@@ -116,6 +116,45 @@
             <Setter Property="HeadersVisibility" Value="Column"/>
         </Style>
 
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="#1D2033"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource OkBrush}"/>
+                    <Setter Property="Foreground" Value="#0E1A22"/>
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True"/>
+                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="{StaticResource OkBrush}"/>
+                    <Setter Property="Foreground" Value="#0E1A22"/>
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource OkBrush}"/>
+                    <Setter Property="Foreground" Value="#0E1A22"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource OkBrush}"/>
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True"/>
+                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="{StaticResource OkBrush}"/>
+                    <Setter Property="Foreground" Value="#0E1A22"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource OkBrush}"/>
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
             <Setter Property="Foreground" Value="White"/>
@@ -420,19 +459,21 @@
                                 <ColumnDefinition Width="1*"/>
                             </Grid.ColumnDefinitions>
 
-                            <DataGrid ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult}" AutoGenerateColumns="False" CanUserAddRows="False" Grid.Column="0" FontSize="12">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
-                                    <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
-                                    <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score}" Width="0.8*"/>
-                                    <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
-                                    <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
-                                    <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
-                                    <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="*"/>
-                                    <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="*"/>
-                                    <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
+                            <Border Grid.Column="0" CornerRadius="8" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" ClipToBounds="True">
+                                <DataGrid ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult}" AutoGenerateColumns="False" CanUserAddRows="False" FontSize="12">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
+                                        <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
+                                        <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score}" Width="0.8*"/>
+                                        <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
+                                        <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
+                                        <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
+                                        <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="*"/>
+                                        <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="*"/>
+                                        <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
 
                             <Border Grid.Row="1" Grid.Column="0" Margin="0,8,0,0" Padding="10" Background="#171A2C" CornerRadius="8">
                                 <StackPanel>
@@ -515,50 +556,63 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <DataGrid ItemsSource="{Binding TopHosts}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Setter Property="Background" Value="#1D2033"/>
-                                    <Setter Property="FontWeight" Value="Normal"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Rank}" Value="1">
-                                            <Setter Property="Background" Value="#3B2F10"/>
-                                            <Setter Property="FontWeight" Value="Bold"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Rank}" Value="2">
-                                            <Setter Property="Background" Value="#2D3440"/>
-                                            <Setter Property="FontWeight" Value="SemiBold"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Rank}" Value="3">
-                                            <Setter Property="Background" Value="#3A2A24"/>
-                                            <Setter Property="FontWeight" Value="SemiBold"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.Columns>
-                                <DataGridTemplateColumn Header="" Width="0.35*">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding RankMarker}"
-                                                       Foreground="{Binding RankMarkerColor}"
-                                                       FontSize="15"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
-                                <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
-                                <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
-                                <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
-                                <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="0.8*" SortMemberPath="Ping"/>
-                                <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="0.8*" SortMemberPath="Jitter"/>
-                                <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
-                                <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="0.8*" SortMemberPath="Download"/>
-                                <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="0.8*" SortMemberPath="Upload"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
+                            <Border CornerRadius="8" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" ClipToBounds="True">
+                                <DataGrid ItemsSource="{Binding TopHosts}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                <DataGrid.RowStyle>
+                                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                        <Setter Property="FontWeight" Value="Normal"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Rank}" Value="1"/>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Background" Value="#3B2F10"/>
+                                                <Setter Property="FontWeight" Value="Bold"/>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Rank}" Value="2"/>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Background" Value="#2D3440"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Rank}" Value="3"/>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Background" Value="#3A2A24"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGrid.RowStyle>
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="" Width="0.35*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding RankMarker}"
+                                                           Foreground="{Binding RankMarkerColor}"
+                                                           FontSize="15"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
+                                    <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
+                                    <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
+                                    <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
+                                    <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="0.8*" SortMemberPath="Ping"/>
+                                    <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="0.8*" SortMemberPath="Jitter"/>
+                                    <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
+                                    <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="0.8*" SortMemberPath="Download"/>
+                                    <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="0.8*" SortMemberPath="Upload"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            </Border>
                             <TextBlock Grid.Row="1"
                                        Margin="0,8,0,0"
                                        Text="{Binding RecommendationText}"
