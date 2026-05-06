@@ -164,9 +164,10 @@ namespace VpnSpeedAnalyzer.Logic
         /// True, если transport fingerprint отличается от последнего принятого и стабилен не меньше <see cref="VpnTransportDebounceMs"/> мс.
         /// decisionLog возвращает диагностику принятого решения для подробного лога.
         /// </summary>
-        private bool TryConfirmVpnTransportChange(string fingerprint, out string decisionLog)
+        private bool TryConfirmVpnTransportChange(string fingerprint, out string decisionLog, out bool isPrimarySwitch)
         {
             decisionLog = string.Empty;
+            isPrimarySwitch = false;
 
             if (string.IsNullOrWhiteSpace(fingerprint))
             {
@@ -238,6 +239,7 @@ namespace VpnSpeedAnalyzer.Logic
             _lastVpnTransportFingerprint = fingerprint;
             _vpnDebounceChangeInProgress = false;
             _lastConfirmedVpnTransportChangeUtc = nowUtc;
+            isPrimarySwitch = string.Equals(switchClass, "PRIMARY", StringComparison.Ordinal);
             decisionLog =
                 $"смена подтверждена: class={switchClass}, delta={delta}, выдержка={waitedMs:F0}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
             return true;
@@ -299,8 +301,12 @@ namespace VpnSpeedAnalyzer.Logic
 
                         var vpnDecision = "snapshot отсутствует";
                         var vpnTransportChanged = false;
+                        var vpnTransportPrimary = false;
                         if (vpnSnapshot != null)
-                            vpnTransportChanged = TryConfirmVpnTransportChange(vpnSnapshot.Fingerprint, out vpnDecision);
+                            vpnTransportChanged = TryConfirmVpnTransportChange(
+                                vpnSnapshot.Fingerprint,
+                                out vpnDecision,
+                                out vpnTransportPrimary);
 
                         if (vpnSnapshot == null)
                         {
@@ -310,7 +316,7 @@ namespace VpnSpeedAnalyzer.Logic
                         {
                             Logger.Write(
                                 $"VPN transport tick: pid={vpnSnapshot.ProcessId}, conn={vpnSnapshot.ConnectionCount}, " +
-                                $"endpoints={CountFingerprintEndpoints(vpnSnapshot.Fingerprint)}, changed={vpnTransportChanged}, {vpnDecision}");
+                                $"endpoints={CountFingerprintEndpoints(vpnSnapshot.Fingerprint)}, changed={vpnTransportChanged}, primary={vpnTransportPrimary}, {vpnDecision}");
                         }
 
                         var utcNow = DateTime.UtcNow;
@@ -319,14 +325,20 @@ namespace VpnSpeedAnalyzer.Logic
                         var intervalElapsed = sinceLastMeasurement >= ForcedRunInterval;
                         var firstMeasurement = _lastSpeedtestUtc == DateTime.MinValue;
                         var userRequested = _forceRunRequested;
-                        var automaticTrigger = firstMeasurement || vpnTransportChanged || intervalElapsed;
+                        var vpnTransportChangedForMeasurement = vpnTransportChanged && vpnTransportPrimary;
+                        var automaticTrigger = firstMeasurement || vpnTransportChangedForMeasurement || intervalElapsed;
                         var autoGapTooShort = !firstMeasurement
                                               && !intervalElapsed
                                               && sinceLastMeasurement < MinAutomaticRunGap;
                         var shouldMeasure = userRequested || (automaticTrigger && !autoGapTooShort);
 
+                        if (vpnTransportChanged && !vpnTransportPrimary)
+                        {
+                            Logger.Write("VPN transport: подтверждена TAIL-волна, автозамер пропущен (триггер только PRIMARY)");
+                        }
+
                         Logger.Write(
-                            $"Тик монитора: vpnTransportChanged={vpnTransportChanged}, " +
+                            $"Тик монитора: vpnTransportChanged={vpnTransportChanged}, primary={vpnTransportPrimary}, triggerByHost={vpnTransportChangedForMeasurement}, " +
                             $"первыйЗамер={firstMeasurement}, прошло={sinceLastMeasurement.TotalSeconds:F0}s, " +
                             $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, inFlight={_isMeasurementInFlight}, run={shouldMeasure}");
 
@@ -334,7 +346,7 @@ namespace VpnSpeedAnalyzer.Logic
                         {
                             var reasonText = userRequested
                                 ? "по запросу"
-                                : vpnTransportChanged
+                                : vpnTransportChangedForMeasurement
                                     ? "смена VPN transport"
                                     : firstMeasurement
                                         ? "старт мониторинга"
