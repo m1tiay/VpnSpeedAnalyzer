@@ -165,7 +165,11 @@ namespace VpnSpeedAnalyzer.Logic
 
         private static int ConvertPort(uint rawPort)
         {
-            return (int)IPAddress.NetworkToHostOrder((short)((rawPort & 0xFFFF0000) >> 16));
+            // В MIB_TCPROW_OWNER_PID порт хранится как 4 байта, где значимы первые 2 байта в network order.
+            // При маршалинге в uint и little-endian shift-арифметика легко даёт неверные значения.
+            // Берём байты напрямую и собираем порт так же, как в PowerShell/WinAPI-примерах.
+            var bytes = BitConverter.GetBytes(rawPort);
+            return (bytes[0] << 8) | bytes[1];
         }
 
         [DllImport("iphlpapi.dll", SetLastError = true)]
