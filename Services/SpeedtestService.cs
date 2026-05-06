@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -46,15 +47,20 @@ namespace VpnSpeedAnalyzer.Services
 
                 for (int attempt = 1; attempt <= MaxAttempts; attempt++)
                 {
+                    var attemptStartedUtc = DateTime.UtcNow;
+                    var args = "--format=json --accept-license --accept-gdpr";
                     var psi = new ProcessStartInfo
                     {
                         FileName = speedtestPath,
-                        Arguments = "--format=json --accept-license --accept-gdpr",
+                        Arguments = args,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
                     };
+
+                    Logger.Write(
+                        $"Speedtest запуск: попытка {attempt}/{MaxAttempts}, file=\"{psi.FileName}\", args=\"{psi.Arguments}\", cwd=\"{AppContext.BaseDirectory}\"");
 
                     using var proc = Process.Start(psi);
                     if (proc == null)
@@ -68,10 +74,11 @@ namespace VpnSpeedAnalyzer.Services
 
                     var progState = new ProgressState();
                     progState.BumpToAtLeast(4, progress);
+                    var stderrTail = new RollingTail(14);
 
                     using var hbCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-                    Task stderrPump = StderrPumpAsync(proc.StandardError, progState, progress, cancellationToken);
+                    Task stderrPump = StderrPumpAsync(proc.StandardError, progState, progress, stderrTail, cancellationToken);
                     Task heartbeat = HeartbeatAsync(proc, progState, progress, hbCts.Token);
 
                     string output;
@@ -86,6 +93,7 @@ namespace VpnSpeedAnalyzer.Services
                     catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                     {
                         Logger.Write($"Процесс Speedtest превысил таймаут: {ProcessTimeoutMs}мс (попытка {attempt}/{MaxAttempts})");
+                        Logger.Write($"Speedtest stderr (tail): {stderrTail.ToSingleLine()}");
                         TryKill(proc);
                         LastFailureReason = $"Таймаут speedtest ({ProcessTimeoutMs / 1000} сек)";
                         hbCts.Cancel();
@@ -101,7 +109,11 @@ namespace VpnSpeedAnalyzer.Services
 
                     if (proc.ExitCode != 0)
                     {
-                        Logger.Write($"Процесс Speedtest завершился с кодом {proc.ExitCode} (попытка {attempt}/{MaxAttempts})");
+                        var elapsedMs = (DateTime.UtcNow - attemptStartedUtc).TotalMilliseconds;
+                        Logger.Write(
+                            $"Процесс Speedtest завершился с кодом {proc.ExitCode} (попытка {attempt}/{MaxAttempts}, elapsed={elapsedMs:F0}мс)");
+                        Logger.Write($"Speedtest stderr (tail): {stderrTail.ToSingleLine()}");
+                        Logger.Write($"Speedtest stdout (tail): {ToTailSingleLine(output)}");
                         LastFailureReason = $"Код завершения speedtest: {proc.ExitCode}";
                         progress?.Report(0);
                         if (attempt < MaxAttempts)
@@ -112,6 +124,7 @@ namespace VpnSpeedAnalyzer.Services
                     if (string.IsNullOrWhiteSpace(output))
                     {
                         Logger.Write($"Speedtest вернул пустой результат (попытка {attempt}/{MaxAttempts})");
+                        Logger.Write($"Speedtest stderr (tail): {stderrTail.ToSingleLine()}");
                         LastFailureReason = "Speedtest вернул пустой результат";
                         progress?.Report(0);
                         if (attempt < MaxAttempts)
@@ -122,11 +135,15 @@ namespace VpnSpeedAnalyzer.Services
                     var parsed = ParseSpeedtestOutput(output);
                     if (parsed != null)
                     {
+                        var elapsedMs = (DateTime.UtcNow - attemptStartedUtc).TotalMilliseconds;
+                        Logger.Write($"Speedtest успешно завершён (попытка {attempt}/{MaxAttempts}, elapsed={elapsedMs:F0}мс)");
                         progState.BumpToAtLeast(100, progress);
                         return parsed;
                     }
 
                     Logger.Write($"Не удалось распарсить результат speedtest (попытка {attempt}/{MaxAttempts})");
+                    Logger.Write($"Speedtest stderr (tail): {stderrTail.ToSingleLine()}");
+                    Logger.Write($"Speedtest stdout (tail): {ToTailSingleLine(output)}");
                     LastFailureReason = "Не удалось распарсить ответ speedtest";
                     progress?.Report(0);
                     if (attempt < MaxAttempts)
@@ -184,6 +201,7 @@ namespace VpnSpeedAnalyzer.Services
             StreamReader stderr,
             ProgressState state,
             IProgress<double>? progress,
+            RollingTail tail,
             CancellationToken cancellationToken)
         {
             try
@@ -194,6 +212,7 @@ namespace VpnSpeedAnalyzer.Services
                     if (line == null)
                         break;
 
+                    tail.Add(line);
                     state.BumpByOutputLine(line, progress);
                 }
             }
@@ -241,6 +260,58 @@ namespace VpnSpeedAnalyzer.Services
             catch
             {
                 // Игнорируем — процесс мог уже завершиться.
+            }
+        }
+
+        private static string ToTailSingleLine(string? text, int maxLines = 8, int maxChars = 1200)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return "<empty>";
+
+            var lines = text
+                .Replace("\r", string.Empty)
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            var tail = lines.TakeLast(Math.Max(1, maxLines));
+            var joined = string.Join(" | ", tail).Trim();
+            if (joined.Length > maxChars)
+                joined = joined.Substring(0, maxChars) + "...";
+
+            return string.IsNullOrWhiteSpace(joined) ? "<empty>" : joined;
+        }
+
+        private sealed class RollingTail
+        {
+            private readonly int _capacity;
+            private readonly Queue<string> _lines;
+
+            public RollingTail(int capacity)
+            {
+                _capacity = Math.Max(1, capacity);
+                _lines = new Queue<string>(_capacity);
+            }
+
+            public void Add(string line)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    return;
+
+                if (_lines.Count >= _capacity)
+                    _lines.Dequeue();
+
+                _lines.Enqueue(line.Trim());
+            }
+
+            public string ToSingleLine(int maxChars = 1200)
+            {
+                if (_lines.Count == 0)
+                    return "<empty>";
+
+                var text = string.Join(" | ", _lines);
+                if (text.Length > maxChars)
+                    text = text.Substring(0, maxChars) + "...";
+
+                return text;
             }
         }
 
