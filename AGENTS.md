@@ -40,3 +40,14 @@ There are **no automated test projects** in this repository. Validation is done 
 | Project file | `VpnSpeedAnalyzer.csproj` |
 | CI workflow | `.github/workflows/build.yml` |
 | .NET SDK | `/usr/share/dotnet-latest` (v8.0.420) |
+
+### Правила командной работы
+
+- При добавлении или изменении комментариев в коде писать их на русском.
+- Сообщения коммитов по умолчанию писать на русском.
+- Перед переходом в новый чат всегда готовить короткий хендовер:
+  - что уже сделано,
+  - что осталось открытым,
+  - текущее состояние git,
+  - следующие рекомендуемые шаги.
+- Так как это WPF desktop-приложение, финальную визуальную проверку выполнять на Windows, а проверки сборки/publish оставлять в GitHub Actions.

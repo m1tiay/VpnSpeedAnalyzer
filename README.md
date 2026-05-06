@@ -53,7 +53,3 @@
 Локальная команда публикации:
 
 `dotnet publish VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained true -o out`
-
----
-
-Документация на английском: [`README.en.md`](README.en.md).

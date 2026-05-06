@@ -60,7 +60,3 @@ You can also publish locally:
 
 - Logs are stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs`.
 - App supports dark UI and status-based monitoring feedback.
-
----
-
-For Russian documentation, open [`README.md`](README.md).
