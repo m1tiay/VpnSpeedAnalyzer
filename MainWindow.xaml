@@ -37,7 +37,7 @@
 
         <Style TargetType="GroupBox">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
             <Setter Property="Padding" Value="8,12,8,8"/>
             <Setter Property="BorderBrush" Value="{StaticResource PanelSecondaryBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -416,7 +416,7 @@
                         Command="{Binding ShowMonitoringTabCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource TopNavButtonStyle}">
-                            <Setter Property="Margin" Value="0,0,10,0"/>
+                            <Setter Property="Margin" Value="0,0,8,0"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsMonitoringTabSelected}" Value="True">
                                     <Setter Property="Background" Value="#2C3255"/>
@@ -467,7 +467,7 @@
                         <RowDefinition Height="2.1*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
+                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,8">
                         <DockPanel LastChildFill="True">
                             <Grid DockPanel.Dock="Left" VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
@@ -503,10 +503,10 @@
                         </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="1" Margin="0,10,0,10">
+                    <Grid Grid.Row="1" Margin="0,8,0,8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="8"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <GroupBox Grid.Column="0" Header="Дрожание (мс)" Margin="0">
@@ -525,7 +525,7 @@
                                   ResizeDirection="Rows"
                                   ShowsPreview="False"/>
 
-                    <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0,10,0,10">
+                    <Border Grid.Row="3" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="8" Margin="0,8,0,8">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
@@ -533,7 +533,7 @@
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2.3*"/>
-                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="1*"/>
                             </Grid.ColumnDefinitions>
 
@@ -645,8 +645,25 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,10">
-                        <DockPanel LastChildFill="False">
+                    <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,0,8">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="IP:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding CurrentIp}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="Страна:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="{Binding CurrentCountry}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="ASN:" FontWeight="Bold" Margin="0,0,8,0" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="5" Text="{Binding CurrentAsn}" Margin="0,0,16,0" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                            </Grid>
+
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
                                 <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{Binding StatusColor}"/>
                                 <TextBlock Text="{Binding RecommendationText}" HorizontalAlignment="Right" Margin="0,4,0,0" Foreground="{StaticResource TextBrush}" FontSize="11"/>
@@ -664,27 +681,27 @@
                         </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="1" Margin="0,10,0,10">
+                    <Grid Grid.Row="1" Margin="0,8,0,8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <UniformGrid Rows="1" Columns="4" Margin="0,0,0,10">
-                            <GroupBox Header="Всего замеров" Margin="0,0,10,0">
+                        <UniformGrid Rows="1" Columns="4" Margin="0,0,0,8">
+                            <GroupBox Header="Всего замеров" Margin="0,0,8,0">
                                 <TextBlock Text="{Binding TotalMeasurements}"
                                            Foreground="{StaticResource TextBrush}"
                                            FontSize="22"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Left"/>
                             </GroupBox>
-                            <GroupBox Header="Уникальных хостов" Margin="0,0,10,0">
+                            <GroupBox Header="Уникальных хостов" Margin="0,0,8,0">
                                 <TextBlock Text="{Binding UniqueHostsCount}"
                                            Foreground="{StaticResource TextBrush}"
                                            FontSize="22"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Left"/>
                             </GroupBox>
-                            <GroupBox Header="Средний D.Q.S" Margin="0,0,10,0">
+                            <GroupBox Header="Средний D.Q.S" Margin="0,0,8,0">
                                 <TextBlock Text="{Binding AverageScore, StringFormat=F2}"
                                            Foreground="{StaticResource OkBrush}"
                                            FontSize="22"
@@ -735,8 +752,8 @@
             </TabItem>
         </TabControl>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-            <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Margin="0,0,10,0" Command="{Binding ToggleMonitoringCommand}"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+            <Button Content="{Binding ToggleMonitoringButtonText}" Width="130" Margin="0,0,8,0" Command="{Binding ToggleMonitoringCommand}"/>
             <Button Content="{Binding ActiveExportButtonText}" Width="150" Margin="0" Command="{Binding ActiveExportCommand}"/>
         </StackPanel>
     </Grid>
