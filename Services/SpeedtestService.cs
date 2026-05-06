@@ -196,9 +196,10 @@ namespace VpnSpeedAnalyzer.Services
                     if (line == null)
                         break;
 
+                    var byLine = state.BumpByOutputLine(line, progress);
                     var inferred = InferProgressFromLine(line);
                     if (inferred.HasValue)
-                        state.BumpToAtLeast(inferred.Value, progress);
+                        state.BumpToAtLeast(Math.Max(inferred.Value, byLine), progress);
                 }
             }
             catch
@@ -224,7 +225,7 @@ namespace VpnSpeedAnalyzer.Services
                     if (proc.HasExited)
                         break;
 
-                    // Не перепрыгиваем реальные проценты из stderr; около 90% оставляем до завершения.
+                    // Не перепрыгиваем реальные проценты из stderr; около 95% оставляем до завершения.
                     state.BumpHeart(progress);
                 }
             }
@@ -279,6 +280,7 @@ namespace VpnSpeedAnalyzer.Services
         {
             private readonly object _gate = new();
             private double _max;
+            private int _lineSteps;
 
             public void BumpToAtLeast(double value, IProgress<double>? p)
             {
@@ -299,14 +301,35 @@ namespace VpnSpeedAnalyzer.Services
             {
                 lock (_gate)
                 {
-                    if (_max >= 92)
+                    if (_max >= 95)
                         return;
 
-                    var next = Math.Min(90, _max + 5);
+                    var next = Math.Min(95, _max + 2);
                     if (next <= _max)
                         return;
                     _max = next;
                     p?.Report(_max);
+                }
+            }
+
+            public double BumpByOutputLine(string line, IProgress<double>? p)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    return _max;
+
+                lock (_gate)
+                {
+                    // Привязываем прогресс к строкам вывода speedtest: шаг 10% за каждую значимую строку.
+                    if (_lineSteps < 10)
+                        _lineSteps++;
+
+                    var byLine = Math.Min(95, _lineSteps * 10.0);
+                    if (byLine <= _max)
+                        return byLine;
+
+                    _max = byLine;
+                    p?.Report(_max);
+                    return byLine;
                 }
             }
         }

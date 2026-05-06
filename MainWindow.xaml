@@ -895,116 +895,80 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <UniformGrid Rows="1" Columns="4" Margin="0,0,0,8" Grid.Row="0">
-                                <GroupBox Header="Всего замеров" Margin="0,0,8,0">
+                                <GroupBox Header="Всего замеров" Margin="4,0,4,0">
                                     <TextBlock Text="{Binding TotalMeasurements}"
                                                Foreground="{StaticResource TextBrush}"
                                                FontSize="22"
                                                FontWeight="Bold"
                                                HorizontalAlignment="Left"/>
                                 </GroupBox>
-                                <GroupBox Header="Уникальных хостов" Margin="0,0,8,0">
+                                <GroupBox Header="Уникальных хостов" Margin="4,0,4,0">
                                     <TextBlock Text="{Binding UniqueHostsCount}"
                                                Foreground="{StaticResource TextBrush}"
                                                FontSize="22"
                                                FontWeight="Bold"
                                                HorizontalAlignment="Left"/>
                                 </GroupBox>
-                                <GroupBox Header="Ср. D.Q.S (лидер)" Margin="0,0,8,0"
+                                <GroupBox Header="Ср. D.Q.S (лидер)" Margin="4,0,4,0"
                                           ToolTip="Число по лидеру таблицы (#1). Выберите строку — покажем Δ к лидеру: для D.Q.S «+» выгодно (зелёный), «−» хуже (красный).">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding CmpDqsLeaderText}"
+                                        <TextBlock Text="{Binding CmpDqsCompareText}"
                                                    Foreground="{StaticResource TextBrush}"
                                                    FontSize="22"
                                                    FontWeight="Bold"/>
-                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding CmpDqsDeltaText}"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{Binding CmpDqsDeltaBrush}"
-                                                   Margin="0,4,0,0"
-                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                        <TextBlock Text="лидер | выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </GroupBox>
-                                <GroupBox Header="Ср. пинг, мс (лидер)"
+                                <GroupBox Header="Ср. пинг, мс (лидер)" Margin="4,0,4,0"
                                           ToolTip="По лидеру. Для пинга меньше лучше: «+Δ» к худшему красным, «−Δ» к лучшему зелёным.">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding CmpPingLeaderText}"
+                                        <TextBlock Text="{Binding CmpPingCompareText}"
                                                    Foreground="{StaticResource TextBrush}"
                                                    FontSize="22"
                                                    FontWeight="Bold"/>
-                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding CmpPingDeltaText}"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{Binding CmpPingDeltaBrush}"
-                                                   Margin="0,4,0,0"
-                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                        <TextBlock Text="лидер | выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </GroupBox>
                             </UniformGrid>
                             <UniformGrid Rows="1" Columns="4" Grid.Row="1">
-                                <GroupBox Header="Ср. дрожание, мс (лидер)" Margin="0,0,8,0"
+                                <GroupBox Header="Ср. дрожание, мс (лидер)" Margin="4,0,4,0"
                                           ToolTip="Меньше джиттер лучше — как для пинга.">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding CmpJitterLeaderText}"
+                                        <TextBlock Text="{Binding CmpJitterCompareText}"
                                                    Foreground="{StaticResource TextBrush}"
                                                    FontSize="22"
                                                    FontWeight="Bold"/>
-                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding CmpJitterDeltaText}"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{Binding CmpJitterDeltaBrush}"
-                                                   Margin="0,4,0,0"
-                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                        <TextBlock Text="лидер | выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </GroupBox>
-                                <GroupBox Header="Ср. потери % (лидер)" Margin="0,0,8,0"
+                                <GroupBox Header="Ср. потери % (лидер)" Margin="4,0,4,0"
                                           ToolTip="Меньше потери лучше.">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding CmpLossLeaderText}"
+                                        <TextBlock Text="{Binding CmpLossCompareText}"
                                                    Foreground="{StaticResource TextBrush}"
                                                    FontSize="22"
                                                    FontWeight="Bold"/>
-                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding CmpLossDeltaText}"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{Binding CmpLossDeltaBrush}"
-                                                   Margin="0,4,0,0"
-                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                        <TextBlock Text="лидер | выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </GroupBox>
-                                <GroupBox Header="Ср. загрузка, Мбит/с (лидер)" Margin="0,0,8,0"
+                                <GroupBox Header="Ср. загрузка, Мбит/с (лидер)" Margin="4,0,4,0"
                                           ToolTip="Выше скорость лучше: «+Δ» к выгоде — зелёный.">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding CmpDownLeaderText}"
+                                        <TextBlock Text="{Binding CmpDownCompareText}"
                                                    Foreground="{StaticResource OkBrush}"
                                                    FontSize="22"
                                                    FontWeight="Bold"/>
-                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding CmpDownDeltaText}"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{Binding CmpDownDeltaBrush}"
-                                                   Margin="0,4,0,0"
-                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                        <TextBlock Text="лидер | выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </GroupBox>
-                                <GroupBox Header="Ср. отдача, Мбит/с (лидер)"
+                                <GroupBox Header="Ср. отдача, Мбит/с (лидер)" Margin="4,0,4,0"
                                           ToolTip="Выше отдача лучше — как загрузка.">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding CmpUpLeaderText}"
+                                        <TextBlock Text="{Binding CmpUpCompareText}"
                                                    Foreground="{StaticResource TextBrush}"
                                                    FontSize="22"
                                                    FontWeight="Bold"/>
-                                        <TextBlock Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding CmpUpDeltaText}"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{Binding CmpUpDeltaBrush}"
-                                                   Margin="0,4,0,0"
-                                                   Visibility="{Binding CmpShowDelta, Converter={StaticResource BoolToVisibility}}"/>
+                                        <TextBlock Text="лидер | выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </GroupBox>
                             </UniformGrid>

@@ -21,6 +21,8 @@ namespace VpnSpeedAnalyzer.Logic
 
         // Принудительный замер скорости даже без изменения контура — раз в 5 минут.
         private static readonly TimeSpan ForcedRunInterval = TimeSpan.FromMinutes(5);
+        // Защита от «дребезга» источников событий: не запускать авто-замеры слишком часто подряд.
+        private static readonly TimeSpan MinAutomaticRunGap = TimeSpan.FromSeconds(45);
 
         // Резервное обнаружение смены VPN: публичный IP опрашивается реже, если локальный отпечаток не меняется.
         private const int EgressPollIntervalMs = 20000;
@@ -250,17 +252,21 @@ namespace VpnSpeedAnalyzer.Logic
 
                         var firstMeasurement = _lastSpeedtestUtc == DateTime.MinValue;
 
-                        var shouldMeasure = firstMeasurement || topologyConfirmed || egressIpChanged || intervalElapsed ||
-                                            _forceRunRequested;
+                        var automaticTrigger = firstMeasurement || topologyConfirmed || egressIpChanged || intervalElapsed;
+                        var userRequested = _forceRunRequested;
+                        var autoGapTooShort = !firstMeasurement
+                                              && !intervalElapsed
+                                              && sinceLastMeasurement < MinAutomaticRunGap;
+                        var shouldMeasure = userRequested || (automaticTrigger && !autoGapTooShort);
 
                         Logger.Write(
                             $"Тик монитора: topologyConfirmed={topologyConfirmed}, egressIpChanged={egressIpChanged}, " +
                             $"первыйЗамер={firstMeasurement}, прошло={sinceLastMeasurement.TotalSeconds:F0}s, " +
-                            $"intervalElapsed={intervalElapsed}, force={_forceRunRequested}, run={shouldMeasure}");
+                            $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, run={shouldMeasure}");
 
                         if (shouldMeasure)
                         {
-                            var reasonText = _forceRunRequested
+                            var reasonText = userRequested
                                 ? "по запросу"
                                 : topologyConfirmed
                                     ? "смена сетевого контура"
@@ -286,9 +292,6 @@ namespace VpnSpeedAnalyzer.Logic
                                 var geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
 
                                 MergeGeoIntoResult(result, geo);
-
-                                if (!string.IsNullOrWhiteSpace(result.Ip))
-                                    _lastSeenEgressIp = result.Ip;
 
                                 var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName)
                                     ? "unknown"
@@ -324,7 +327,15 @@ namespace VpnSpeedAnalyzer.Logic
                         }
                         else
                         {
-                            Logger.Write("Замер пропущен: контур стабилен и таймер не истёк");
+                            if (autoGapTooShort)
+                            {
+                                Logger.Write(
+                                    $"Замер пропущен: анти-дребезг автозапуска (прошло {sinceLastMeasurement.TotalSeconds:F0}с, минимум {MinAutomaticRunGap.TotalSeconds:F0}с)");
+                            }
+                            else
+                            {
+                                Logger.Write("Замер пропущен: контур стабилен и таймер не истёк");
+                            }
                         }
 
                         await DelayAsync(LocalPollIntervalMs, token).ConfigureAwait(false);
