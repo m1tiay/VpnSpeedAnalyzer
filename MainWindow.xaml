@@ -11,6 +11,10 @@
         WindowStartupLocation="CenterScreen"
         Background="#141622">
     <Window.Resources>
+        <Style TargetType="{x:Type Control}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+
         <SolidColorBrush x:Key="BgBrush" Color="#141622"/>
         <SolidColorBrush x:Key="PanelBrush" Color="#1D2033"/>
         <SolidColorBrush x:Key="PanelSecondaryBrush" Color="#232741"/>
@@ -190,7 +194,7 @@
                                     <ContentPresenter Grid.Column="0"
                                                       Margin="8,0,8,0"
                                                       VerticalAlignment="Center"
-                                                      HorizontalAlignment="Left"
+                                                      HorizontalAlignment="Center"
                                                       IsHitTestVisible="False"
                                                       Content="{TemplateBinding SelectionBoxItem}"
                                                       ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"/>
