@@ -26,7 +26,7 @@ namespace VpnSpeedAnalyzer.Services
             Timeout = TimeSpan.FromSeconds(HttpTimeoutSeconds)
         };
 
-        public string LastSourceName { get; private set; } = "не определен";
+        public string LastSourceName { get; private set; } = "unknown";
 
         public IpInfoService()
         {
@@ -40,7 +40,7 @@ namespace VpnSpeedAnalyzer.Services
                 var primaryResult = await TryGetFromIpWhoIsAsync().ConfigureAwait(false);
                 if (primaryResult != null)
                 {
-                    LastSourceName = "основной (ipwho.is)";
+                    LastSourceName = "ipwho.is";
                     Logger.Write("IP получен через основной канал ipwho.is");
                     return primaryResult;
                 }
@@ -50,36 +50,36 @@ namespace VpnSpeedAnalyzer.Services
                 var fallbackResult = await TryGetFromIpApiAsync().ConfigureAwait(false);
                 if (fallbackResult != null)
                 {
-                    LastSourceName = "резервный (ipapi.co)";
+                    LastSourceName = "ipapi.co";
                     Logger.Write("IP получен через резервный канал ipapi.co");
                     return fallbackResult;
                 }
 
-                LastSourceName = "недоступен";
+                LastSourceName = "unavailable";
                 Logger.Write("Не удалось получить IP ни через основной, ни через резервный канал");
                 return null;
             }
             catch (HttpRequestException ex)
             {
-                LastSourceName = "недоступен";
+                LastSourceName = "unavailable";
                 Logger.Write($"Ошибка HTTP при запросе к IP API: {ex.Message}");
                 return null;
             }
             catch (TaskCanceledException ex)
             {
-                LastSourceName = "недоступен";
+                LastSourceName = "unavailable";
                 Logger.Write($"Истек таймаут при запросе к IP API: {ex.Message}");
                 return null;
             }
             catch (JsonException ex)
             {
-                LastSourceName = "недоступен";
+                LastSourceName = "unavailable";
                 Logger.Write($"Ошибка парсинга JSON в IP API: {ex.Message}");
                 return null;
             }
             catch (Exception ex)
             {
-                LastSourceName = "недоступен";
+                LastSourceName = "unavailable";
                 Logger.Write($"Неожиданная ошибка IP API: {ex.GetType().Name}: {ex.Message}");
                 return null;
             }
@@ -105,7 +105,7 @@ namespace VpnSpeedAnalyzer.Services
                     Ip = dto.Ip,
                     CountryName = dto.Country ?? string.Empty,
                     CountryCode = dto.CountryCode ?? string.Empty,
-                    Asn = dto.Connection?.Asn ?? string.Empty
+                    Asn = ParseIpWhoIsAsn(dto.Connection?.Asn)
                 };
             }
             catch (HttpRequestException ex)
@@ -228,7 +228,20 @@ namespace VpnSpeedAnalyzer.Services
         private sealed class IpWhoIsConnection
         {
             [JsonPropertyName("asn")]
-            public string? Asn { get; set; }
+            public JsonElement Asn { get; set; }
+        }
+
+        private static string ParseIpWhoIsAsn(JsonElement? asnElement)
+        {
+            if (asnElement == null || asnElement.Value.ValueKind == JsonValueKind.Undefined || asnElement.Value.ValueKind == JsonValueKind.Null)
+                return string.Empty;
+
+            return asnElement.Value.ValueKind switch
+            {
+                JsonValueKind.Number => asnElement.Value.ToString(),
+                JsonValueKind.String => asnElement.Value.GetString() ?? string.Empty,
+                _ => asnElement.Value.ToString()
+            };
         }
     }
 }

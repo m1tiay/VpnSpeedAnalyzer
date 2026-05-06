@@ -96,7 +96,7 @@ namespace VpnSpeedAnalyzer.Logic
                         if (info != null)
                         {
                             IpInfoUpdated?.Invoke(this, info);
-                            var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName) ? "не определен" : _ipService.LastSourceName;
+                            var sourceName = string.IsNullOrWhiteSpace(_ipService.LastSourceName) ? "unknown" : _ipService.LastSourceName;
                             StatusMessage?.Invoke(this, $"INFO: Источник IP: {sourceName}");
 
                             if (_lastIp == null || info.Ip != _lastIp.Ip)
@@ -142,7 +142,7 @@ namespace VpnSpeedAnalyzer.Logic
                     {
                         Logger.Write($"Monitor loop error: {ex.GetType().Name}: {ex.Message}");
                         StatusMessage?.Invoke(this, $"ERROR: Сбой цикла мониторинга: {ex.Message}");
-                        // Continue looping even on error
+                        // Продолжаем цикл даже при ошибке.
                         try
                         {
                             await Task.Delay(CheckIntervalMs, token)

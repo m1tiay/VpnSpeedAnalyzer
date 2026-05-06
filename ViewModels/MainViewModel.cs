@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -297,8 +298,6 @@ namespace VpnSpeedAnalyzer
 
                     UpdateRecommendation();
                     UpdateTopHosts();
-                    SelectedResult ??= _resultsManager.GetRecommendedResult();
-
                     StatusText = $"✓ Последняя проверка: {DateTime.Now:HH:mm:ss}";
                     StatusColor = "#59D9B7";
 
@@ -494,7 +493,7 @@ namespace VpnSpeedAnalyzer
             if (string.IsNullOrEmpty(field))
                 return "\"\"";
 
-            // Check for formula injection patterns
+            // Проверяем потенциально опасные префиксы формул.
             if (field.Length > 0 && (
                 field[0] == '=' ||
                 field[0] == '+' ||
@@ -506,7 +505,7 @@ namespace VpnSpeedAnalyzer
                 field = "'" + field;
             }
 
-            // Escape quotes and wrap if needed
+            // Экранируем кавычки и оборачиваем поле при необходимости.
             if (field.Contains("\"") || field.Contains(",") || field.Contains("\n") || field.Contains("\r"))
             {
                 return "\"" + field.Replace("\"", "\"\"") + "\"";
@@ -594,9 +593,9 @@ namespace VpnSpeedAnalyzer
                 entry.RankMarkerColor = "#A8B0D9";
             }
 
-            TopHosts.Clear();
+            var rankedResults = _resultsManager.GetTopResults(Results.Count);
             var rank = 1;
-            foreach (var item in _resultsManager.GetTopResults(TopHostsCount))
+            foreach (var item in rankedResults)
             {
                 item.Rank = rank++;
                 item.RankBadge = item.Rank switch
@@ -612,10 +611,19 @@ namespace VpnSpeedAnalyzer
                     1 => "#F6C453",
                     2 => "#B8C0D8",
                     3 => "#D08A5C",
-                    _ => "#5E668F"
+                    _ => "#A8B0D9"
                 };
-                TopHosts.Add(item);
+
+                if (item.Rank > TopHostsCount)
+                {
+                    item.RankBadge = "";
+                    item.RankMarker = "";
+                }
             }
+
+            TopHosts.Clear();
+            foreach (var topItem in rankedResults.Take(TopHostsCount))
+                TopHosts.Add(topItem);
         }
 
         private static double ScoreLowerIsBetter(double value, double ideal, double worst)

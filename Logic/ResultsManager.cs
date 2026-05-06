@@ -39,7 +39,7 @@ namespace VpnSpeedAnalyzer.Logic
                 return;
             }
 
-            _results.Add(entry);
+            RebuildVisibleResults(_allResults);
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace VpnSpeedAnalyzer.Logic
         private void RebuildVisibleResults(IEnumerable<ResultEntry> source)
         {
             _results.Clear();
-            foreach (var entry in source)
+            foreach (var entry in source.OrderByDescending(r => r.Score))
                 _results.Add(entry);
         }
     }

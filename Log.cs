@@ -3,10 +3,10 @@ using VpnSpeedAnalyzer.Logic;
 namespace VpnSpeedAnalyzer
 {
     /// <summary>
-    /// Deprecated: Use Logger class from VpnSpeedAnalyzer.Logic instead
-    /// This class is kept for backward compatibility only
+    /// Устарело: используйте класс Logger из VpnSpeedAnalyzer.Logic.
+    /// Этот класс оставлен только для обратной совместимости.
     /// </summary>
-    [System.Obsolete("Use Logger from VpnSpeedAnalyzer.Logic namespace instead", false)]
+    [System.Obsolete("Используйте Logger из пространства имен VpnSpeedAnalyzer.Logic", false)]
     public static class Log
     {
         public static void Info(string msg) => Logger.Write($"INFO: {msg}");

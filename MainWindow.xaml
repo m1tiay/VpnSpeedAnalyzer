@@ -460,7 +460,7 @@
                             </Grid.ColumnDefinitions>
 
                             <Border Grid.Column="0" CornerRadius="8" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" ClipToBounds="True">
-                                <DataGrid ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult}" AutoGenerateColumns="False" CanUserAddRows="False" FontSize="12">
+                                <DataGrid ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult}" IsSynchronizedWithCurrentItem="False" AutoGenerateColumns="False" CanUserAddRows="False" FontSize="12">
                                     <DataGrid.RowStyle>
                                         <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                                             <Style.Triggers>
@@ -506,13 +506,12 @@
                                         <DataGridTextColumn Header="Топ" Binding="{Binding RankBadge}" Width="0.5*"/>
                                         <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
                                         <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
-                                        <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score}" Width="0.8*"/>
-                                        <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="*"/>
-                                        <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="*"/>
-                                        <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="*"/>
-                                        <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="*"/>
-                                        <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="*"/>
-                                        <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
+                                        <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
+                                        <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="0.8*" SortMemberPath="Ping"/>
+                                        <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="0.8*" SortMemberPath="Jitter"/>
+                                        <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
+                                        <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="0.8*" SortMemberPath="Download"/>
+                                        <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="0.8*" SortMemberPath="Upload"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
@@ -598,7 +597,7 @@
                             </Grid.RowDefinitions>
 
                             <Border CornerRadius="8" BorderBrush="{StaticResource PanelSecondaryBrush}" BorderThickness="1" ClipToBounds="True">
-                                <DataGrid ItemsSource="{Binding TopHosts}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                <DataGrid ItemsSource="{Binding Results}" IsSynchronizedWithCurrentItem="False" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                 <DataGrid.RowStyle>
                                     <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                                         <Setter Property="FontWeight" Value="Normal"/>
@@ -642,6 +641,7 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Топ" Binding="{Binding RankBadge}" Width="0.5*"/>
                                     <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
                                     <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="*"/>
                                     <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
@@ -651,6 +651,7 @@
                                     <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
                                     <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="0.8*" SortMemberPath="Download"/>
                                     <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="0.8*" SortMemberPath="Upload"/>
+                                    <DataGridTextColumn Header="Время" Binding="{Binding Timestamp}" Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                             </Border>
