@@ -544,6 +544,13 @@
                                         </Style>
                                     </ProgressBar.Style>
                                 </ProgressBar>
+                                <TextBlock Text="{Binding LastMeasurementBadgeText}"
+                                           Margin="0,6,0,0"
+                                           ToolTip="{Binding LastMeasurementBadgeToolTip}"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           FontSize="15"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Right"/>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
                                     <Ellipse Width="8" Height="8" Fill="{StaticResource OkBrush}" Margin="0,0,4,0"/>
                                     <TextBlock Text="ОК" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
@@ -625,13 +632,15 @@
                                         </Style>
                                     </DataGrid.RowStyle>
                                     <DataGrid.Columns>
-                                        <DataGridTemplateColumn Header="" Width="0.35*">
+                                        <DataGridTemplateColumn Header="" Width="0.55*">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding RankMarker}"
                                                                Foreground="{Binding RankMarkerColor}"
                                                                ToolTip="{Binding RankMarkerToolTip}"
                                                                FontSize="15"
+                                                               TextAlignment="Center"
+                                                               Margin="0,-1,0,0"
                                                                HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
                                                 </DataTemplate>
@@ -763,6 +772,13 @@
                                         </Style>
                                     </ProgressBar.Style>
                                 </ProgressBar>
+                                <TextBlock Text="{Binding LastMeasurementBadgeText}"
+                                           Margin="0,6,0,0"
+                                           ToolTip="{Binding LastMeasurementBadgeToolTip}"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           FontSize="15"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Right"/>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
                                     <Ellipse Width="8" Height="8" Fill="{StaticResource OkBrush}" Margin="0,0,4,0"/>
                                     <TextBlock Text="ОК" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,12,0" FontSize="11"/>
@@ -987,13 +1003,15 @@
                                             </Style>
                                         </DataGrid.RowStyle>
                                         <DataGrid.Columns>
-                                            <DataGridTemplateColumn Header="" Width="0.35*">
+                                            <DataGridTemplateColumn Header="" Width="0.55*">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
                                                         <TextBlock Text="{Binding RankMarker}"
                                                                    Foreground="{Binding RankMarkerColor}"
                                                                    ToolTip="{Binding RankMarkerToolTip}"
                                                                    FontSize="15"
+                                                                   TextAlignment="Center"
+                                                                   Margin="0,-1,0,0"
                                                                    HorizontalAlignment="Center"
                                                                    VerticalAlignment="Center"/>
                                                     </DataTemplate>

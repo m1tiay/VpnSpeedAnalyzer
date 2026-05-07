@@ -56,6 +56,8 @@ namespace VpnSpeedAnalyzer
         private string _stabilitySummaryText = "Стабильность будет рассчитана после нескольких замеров";
         private string _bestHostSummaryText = "Лучший хост появится после первого успешного замера";
         private string _vpnProcessInfoText = "процесс: —";
+        private string _lastMeasurementBadgeText = "";
+        private string _lastMeasurementBadgeToolTip = "Последний замер пока отсутствует";
 
         private HostRatingRow? _selectedHostRatingRow;
 
@@ -310,6 +312,32 @@ namespace VpnSpeedAnalyzer
             }
         }
 
+        public string LastMeasurementBadgeText
+        {
+            get => _lastMeasurementBadgeText;
+            set
+            {
+                if (_lastMeasurementBadgeText != value)
+                {
+                    _lastMeasurementBadgeText = value;
+                    NotifyPropertyChanged(nameof(LastMeasurementBadgeText));
+                }
+            }
+        }
+
+        public string LastMeasurementBadgeToolTip
+        {
+            get => _lastMeasurementBadgeToolTip;
+            set
+            {
+                if (_lastMeasurementBadgeToolTip != value)
+                {
+                    _lastMeasurementBadgeToolTip = value;
+                    NotifyPropertyChanged(nameof(LastMeasurementBadgeToolTip));
+                }
+            }
+        }
+
         public string TotalMeasurements => Results.Count == 0 ? string.Empty : Results.Count.ToString(CultureInfo.InvariantCulture);
         public string UniqueHostsCount => HostRatings.Count == 0 ? string.Empty : HostRatings.Count.ToString(CultureInfo.InvariantCulture);
 
@@ -546,6 +574,8 @@ namespace VpnSpeedAnalyzer
                     foreach (var existing in Results)
                         existing.IsLatestMeasurement = false;
                     entry.IsLatestMeasurement = true;
+                    LastMeasurementBadgeText = BuildTriggerMarker(entry.TriggerKind, isLatest: true);
+                    LastMeasurementBadgeToolTip = BuildTriggerToolTip(entry.TriggerKind, isLatest: true);
 
                     _resultsManager.AddResult(entry);
 
@@ -790,6 +820,8 @@ namespace VpnSpeedAnalyzer
                 _isMonitoring = true;
                 _hadSuccessfulMeasurement = false;
                 _lastSuccessUtc = default;
+                LastMeasurementBadgeText = "";
+                LastMeasurementBadgeToolTip = "Последний замер пока отсутствует";
                 SetStatus(StatusKind.Ok, "Мониторинг запущен");
                 _monitor.Start();
                 NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
@@ -817,6 +849,8 @@ namespace VpnSpeedAnalyzer
                 _isMonitoring = false;
                 _hadSuccessfulMeasurement = false;
                 _lastSuccessUtc = default;
+                LastMeasurementBadgeText = "";
+                LastMeasurementBadgeToolTip = "Последний замер пока отсутствует";
                 SetStatus(StatusKind.Wait, "Остановлено");
                 _monitor.Stop();
                 NotifyPropertyChanged(nameof(ToggleMonitoringButtonText));
@@ -998,9 +1032,9 @@ namespace VpnSpeedAnalyzer
             foreach (var entry in Results)
             {
                 entry.Rank = 0;
-                entry.RankMarker = BuildTriggerMarker(entry.TriggerKind, entry.IsLatestMeasurement);
-                entry.RankMarkerColor = PickTriggerMarkerColor(entry.TriggerKind, entry.IsLatestMeasurement);
-                entry.RankMarkerToolTip = BuildTriggerToolTip(entry.TriggerKind, entry.IsLatestMeasurement);
+                entry.RankMarker = "";
+                entry.RankMarkerColor = "#A8B0D9";
+                entry.RankMarkerToolTip = "";
             }
 
             var rankedResults = _resultsManager.GetTopResults(Results.Count);
@@ -1008,25 +1042,29 @@ namespace VpnSpeedAnalyzer
             foreach (var item in rankedResults)
             {
                 item.Rank = rank++;
-                item.RankMarker = "●";
-                item.RankMarkerColor = item.Rank switch
+                var isTop = item.Rank <= TopHostsCount;
+                if (isTop)
                 {
-                    1 => "#F6C453",
-                    2 => "#B8C0D8",
-                    3 => "#D08A5C",
-                    _ => "#A8B0D9"
-                };
-                item.RankMarkerToolTip = item.Rank switch
+                    item.RankMarker = "●";
+                    item.RankMarkerColor = item.Rank switch
+                    {
+                        1 => "#F6C453",
+                        2 => "#B8C0D8",
+                        3 => "#D08A5C",
+                        _ => "#A8B0D9"
+                    };
+                    item.RankMarkerToolTip = item.Rank switch
+                    {
+                        1 => "Топ-1 по D.Q.S среди всех замеров",
+                        2 => "Топ-2 по D.Q.S среди всех замеров",
+                        _ => "Топ-3 по D.Q.S среди всех замеров"
+                    };
+                }
+                else
                 {
-                    1 => "Топ-1 по D.Q.S среди всех замеров",
-                    2 => "Топ-2 по D.Q.S среди всех замеров",
-                    3 => "Топ-3 по D.Q.S среди всех замеров",
-                    _ => item.RankMarkerToolTip
-                };
-
-                if (item.Rank > TopHostsCount)
-                {
-                    // Вне топ-3 оставляем только маркер источника/последнего замера.
+                    item.RankMarker = "";
+                    item.RankMarkerColor = "#A8B0D9";
+                    item.RankMarkerToolTip = "";
                 }
             }
 
@@ -1075,6 +1113,7 @@ namespace VpnSpeedAnalyzer
             var latestText = isLatest ? "Это последний выполненный замер." : "Это предыдущий замер.";
             return $"{latestText} {sourceText}";
         }
+
 
         private void UpdateHostAnalytics()
         {
