@@ -1142,9 +1142,9 @@ namespace VpnSpeedAnalyzer
             }
 
             ComputeDirectedDelta(sel.AverageScore, leader.AverageScore, higherIsBetter: true, "F2", 0.01, out _cmpDqsDeltaText, out _cmpDqsDeltaBrush);
-            ComputeDirectedDelta(sel.AveragePing, leader.AveragePing, higherIsBetter: false, "F2", 0.05, out _cmpPingDeltaText, out _cmpPingDeltaBrush);
-            ComputeDirectedDelta(sel.AverageJitter, leader.AverageJitter, higherIsBetter: false, "F2", 0.05, out _cmpJitterDeltaText, out _cmpJitterDeltaBrush);
-            ComputeDirectedDelta(sel.AverageLoss, leader.AverageLoss, higherIsBetter: false, "F2", 0.05, out _cmpLossDeltaText, out _cmpLossDeltaBrush);
+            ComputeDirectedDelta(sel.AveragePing, leader.AveragePing, higherIsBetter: false, "F2", 0.01, out _cmpPingDeltaText, out _cmpPingDeltaBrush);
+            ComputeDirectedDelta(sel.AverageJitter, leader.AverageJitter, higherIsBetter: false, "F2", 0.01, out _cmpJitterDeltaText, out _cmpJitterDeltaBrush);
+            ComputeDirectedDelta(sel.AverageLoss, leader.AverageLoss, higherIsBetter: false, "F2", 0.01, out _cmpLossDeltaText, out _cmpLossDeltaBrush);
             ComputeDirectedDelta(sel.AverageDownloadMbps, leader.AverageDownloadMbps, higherIsBetter: true, "F2", 0.05, out _cmpDownDeltaText, out _cmpDownDeltaBrush);
             ComputeDirectedDelta(sel.AverageUploadMbps, leader.AverageUploadMbps, higherIsBetter: true, "F2", 0.05, out _cmpUpDeltaText, out _cmpUpDeltaBrush);
 
@@ -1201,7 +1201,6 @@ namespace VpnSpeedAnalyzer
             out string deltaText,
             out Brush deltaBrush)
         {
-            _ = higherIsBetter;
             var d = selectedValue - leaderValue;
             if (Math.Abs(d) < epsilon)
             {
@@ -1216,7 +1215,8 @@ namespace VpnSpeedAnalyzer
                 : "\u2212" + (-d).ToString(format, inv);
 
             deltaText = body;
-            deltaBrush = d > 0 ? CmpBrushGood : CmpBrushBad;
+            var isBetter = higherIsBetter ? d > 0 : d < 0;
+            deltaBrush = isBetter ? CmpBrushGood : CmpBrushBad;
         }
 
         private static SolidColorBrush CreateCmpBrushStatic(string hex)
