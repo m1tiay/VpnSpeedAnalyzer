@@ -7,11 +7,11 @@
 
 ## Краткое руководство (для пользователя)
 
-1. Скачайте приложение и запустите его на Windows.
+1. Скачайте `VpnSpeedAnalyzer-win-x64.exe` со страницы Releases: <https://github.com/m1tiay/VpnSpeedAnalyzer/releases>.
 2. Скачайте `speedtest.exe` (Ookla CLI): <https://www.speedtest.net/apps/cli>.
-3. Положите `speedtest.exe` рядом с `VpnSpeedAnalyzer.exe` (рекомендуется).
+3. Положите `speedtest.exe` рядом с `VpnSpeedAnalyzer.exe` (обязательно: без него замеры не выполняются).
 4. Добавьте `speedtest.exe` в VPN-контур (split tunneling / правила маршрутизации VPN), иначе замеры могут идти мимо VPN.
-4. Нажмите `Старт` и дождитесь первого успешного замера.
+5. Запустите `VpnSpeedAnalyzer.exe`, нажмите `Старт` и дождитесь первого успешного замера.
 
 ## Основная логика приложения
 

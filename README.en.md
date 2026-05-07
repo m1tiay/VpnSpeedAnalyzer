@@ -7,11 +7,11 @@ VPN connection quality and choosing the best host based on real measurements.
 
 ## Quick guide (user-focused)
 
-1. Download the app and run it on Windows.
+1. Download `VpnSpeedAnalyzer-win-x64.exe` from Releases: <https://github.com/m1tiay/VpnSpeedAnalyzer/releases>.
 2. Download `speedtest.exe` (Ookla CLI): <https://www.speedtest.net/apps/cli>.
-3. Place `speedtest.exe` next to `VpnSpeedAnalyzer.exe` (recommended).
+3. Place `speedtest.exe` next to `VpnSpeedAnalyzer.exe` (required: measurements will not run without it).
 4. Add `speedtest.exe` to your VPN tunnel/split-tunneling route rules; otherwise measurements may bypass VPN.
-4. Click `Start` and wait for the first successful measurement.
+5. Run `VpnSpeedAnalyzer.exe`, click `Start`, and wait for the first successful measurement.
 
 ## Core application logic
 
