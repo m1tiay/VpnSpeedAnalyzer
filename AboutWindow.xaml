@@ -1,4 +1,5 @@
 <Window x:Class="VpnSpeedAnalyzer.AboutWindow"
+        x:Name="AboutRoot"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="О приложении"
@@ -46,7 +47,7 @@
                            TextDecorations="{x:Null}"
                            Cursor="Hand"
                            Click="OpenRelease_Click">
-                    <Run Text="{Binding AppVersion}"/>
+                    <Run Text="{Binding ElementName=AboutRoot, Path=AppVersion}"/>
                 </Hyperlink>
             </TextBlock>
         </Grid>
@@ -81,32 +82,37 @@
         </Grid>
         </Border>
 
-        <Grid Grid.Row="1" Margin="0,8,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <Border Grid.Row="1"
+                Margin="0,8,0,0"
+                Padding="12,10,12,10"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource PanelSecondaryBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Center">
-                <Button Content="Закрыть"
+                <Button Grid.Column="1"
+                        Content="Закрыть"
                         Width="100"
+                        HorizontalAlignment="Center"
                         Click="Close_Click"/>
-            </StackPanel>
 
-            <TextBlock Grid.Column="2"
-                       VerticalAlignment="Center"
-                       HorizontalAlignment="Right">
-                <Hyperlink Foreground="{StaticResource OkBrush}"
-                           TextDecorations="{x:Null}"
-                           Cursor="Hand"
-                           Click="OpenProject_Click">
-                    created by daver
-                </Hyperlink>
-            </TextBlock>
-        </Grid>
+                <TextBlock Grid.Column="2"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Right">
+                    <Hyperlink Foreground="{StaticResource OkBrush}"
+                               TextDecorations="{x:Null}"
+                               Cursor="Hand"
+                               Click="OpenProject_Click">
+                        created by daver
+                    </Hyperlink>
+                </TextBlock>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
