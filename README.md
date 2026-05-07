@@ -34,6 +34,16 @@
    - `download`, `upload` — чем больше, тем лучше.
 3. Затем объединяет всё в один балл `D.Q.S`.
 
+Пороговые ориентиры для оценки:
+
+| Metric      | ideal | worst | What it measures      | Trend            |
+| ----------- | ----- | ----- | --------------------- | ---------------- |
+| ping (ms)   | 20    | 150   | latency               | lower is better  |
+| jitter (ms) | 2     | 40    | latency stability     | lower is better  |
+| loss (%)    | 0     | 5     | packet loss           | lower is better  |
+| download    | 400   | 20    | download speed (Mbps) | higher is better |
+| upload      | 150   | 10    | upload speed (Mbps)   | higher is better |
+
 Почему один и тот же хост может иметь разный итог в разных режимах:
 
 - в профиле меняется важность метрик (их вклад в общий балл);

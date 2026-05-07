@@ -63,27 +63,27 @@ namespace VpnSpeedAnalyzer
         private static readonly SolidColorBrush CmpBrushBad = CreateCmpBrushStatic("#FF7AA2");
         private static readonly SolidColorBrush CmpBrushNeutral = CreateCmpBrushStatic("#A8B0D9");
 
-        private string _cmpDqsLeaderText = "—";
+        private string _cmpDqsLeaderText = "";
         private string _cmpDqsDeltaText = "";
         private Brush _cmpDqsDeltaBrush = CmpBrushNeutral;
 
-        private string _cmpPingLeaderText = "—";
+        private string _cmpPingLeaderText = "";
         private string _cmpPingDeltaText = "";
         private Brush _cmpPingDeltaBrush = CmpBrushNeutral;
 
-        private string _cmpJitterLeaderText = "—";
+        private string _cmpJitterLeaderText = "";
         private string _cmpJitterDeltaText = "";
         private Brush _cmpJitterDeltaBrush = CmpBrushNeutral;
 
-        private string _cmpLossLeaderText = "—";
+        private string _cmpLossLeaderText = "";
         private string _cmpLossDeltaText = "";
         private Brush _cmpLossDeltaBrush = CmpBrushNeutral;
 
-        private string _cmpDownLeaderText = "—";
+        private string _cmpDownLeaderText = "";
         private string _cmpDownDeltaText = "";
         private Brush _cmpDownDeltaBrush = CmpBrushNeutral;
 
-        private string _cmpUpLeaderText = "—";
+        private string _cmpUpLeaderText = "";
         private string _cmpUpDeltaText = "";
         private Brush _cmpUpDeltaBrush = CmpBrushNeutral;
 
@@ -310,8 +310,8 @@ namespace VpnSpeedAnalyzer
             }
         }
 
-        public int TotalMeasurements => Results.Count;
-        public int UniqueHostsCount => HostRatings.Count;
+        public string TotalMeasurements => Results.Count == 0 ? string.Empty : Results.Count.ToString(CultureInfo.InvariantCulture);
+        public string UniqueHostsCount => HostRatings.Count == 0 ? string.Empty : HostRatings.Count.ToString(CultureInfo.InvariantCulture);
 
         /// <summary>Выбранная строка таблицы аналитики (сравнение с лидером).</summary>
         public HostRatingRow? SelectedHostRatingRow
@@ -330,26 +330,32 @@ namespace VpnSpeedAnalyzer
 
         public string CmpDqsLeaderText => _cmpDqsLeaderText;
         public string CmpDqsDeltaText => _cmpDqsDeltaText;
+        public string CmpDqsSeparatorText => BuildComparisonSeparator(_cmpDqsLeaderText, _cmpDqsDeltaText);
         public Brush CmpDqsDeltaBrush => _cmpDqsDeltaBrush;
 
         public string CmpPingLeaderText => _cmpPingLeaderText;
         public string CmpPingDeltaText => _cmpPingDeltaText;
+        public string CmpPingSeparatorText => BuildComparisonSeparator(_cmpPingLeaderText, _cmpPingDeltaText);
         public Brush CmpPingDeltaBrush => _cmpPingDeltaBrush;
 
         public string CmpJitterLeaderText => _cmpJitterLeaderText;
         public string CmpJitterDeltaText => _cmpJitterDeltaText;
+        public string CmpJitterSeparatorText => BuildComparisonSeparator(_cmpJitterLeaderText, _cmpJitterDeltaText);
         public Brush CmpJitterDeltaBrush => _cmpJitterDeltaBrush;
 
         public string CmpLossLeaderText => _cmpLossLeaderText;
         public string CmpLossDeltaText => _cmpLossDeltaText;
+        public string CmpLossSeparatorText => BuildComparisonSeparator(_cmpLossLeaderText, _cmpLossDeltaText);
         public Brush CmpLossDeltaBrush => _cmpLossDeltaBrush;
 
         public string CmpDownLeaderText => _cmpDownLeaderText;
         public string CmpDownDeltaText => _cmpDownDeltaText;
+        public string CmpDownSeparatorText => BuildComparisonSeparator(_cmpDownLeaderText, _cmpDownDeltaText);
         public Brush CmpDownDeltaBrush => _cmpDownDeltaBrush;
 
         public string CmpUpLeaderText => _cmpUpLeaderText;
         public string CmpUpDeltaText => _cmpUpDeltaText;
+        public string CmpUpSeparatorText => BuildComparisonSeparator(_cmpUpLeaderText, _cmpUpDeltaText);
         public Brush CmpUpDeltaBrush => _cmpUpDeltaBrush;
 
         /// <summary>
@@ -1115,12 +1121,12 @@ namespace VpnSpeedAnalyzer
 
             if (leader == null)
             {
-                _cmpDqsLeaderText = "—";
-                _cmpPingLeaderText = "—";
-                _cmpJitterLeaderText = "—";
-                _cmpLossLeaderText = "—";
-                _cmpDownLeaderText = "—";
-                _cmpUpLeaderText = "—";
+                _cmpDqsLeaderText = "";
+                _cmpPingLeaderText = "";
+                _cmpJitterLeaderText = "";
+                _cmpLossLeaderText = "";
+                _cmpDownLeaderText = "";
+                _cmpUpLeaderText = "";
                 BlankComparisonDeltas();
                 NotifyLeaderComparisonProps();
                 return;
@@ -1153,39 +1159,50 @@ namespace VpnSpeedAnalyzer
 
         private void BlankComparisonDeltas()
         {
-            _cmpDqsDeltaText = "-";
+            _cmpDqsDeltaText = "";
             _cmpDqsDeltaBrush = CmpBrushNeutral;
-            _cmpPingDeltaText = "-";
+            _cmpPingDeltaText = "";
             _cmpPingDeltaBrush = CmpBrushNeutral;
-            _cmpJitterDeltaText = "-";
+            _cmpJitterDeltaText = "";
             _cmpJitterDeltaBrush = CmpBrushNeutral;
-            _cmpLossDeltaText = "-";
+            _cmpLossDeltaText = "";
             _cmpLossDeltaBrush = CmpBrushNeutral;
-            _cmpDownDeltaText = "-";
+            _cmpDownDeltaText = "";
             _cmpDownDeltaBrush = CmpBrushNeutral;
-            _cmpUpDeltaText = "-";
+            _cmpUpDeltaText = "";
             _cmpUpDeltaBrush = CmpBrushNeutral;
+        }
+
+        private static string BuildComparisonSeparator(string left, string right)
+        {
+            return string.IsNullOrWhiteSpace(left) && string.IsNullOrWhiteSpace(right) ? "" : "|";
         }
 
         private void NotifyLeaderComparisonProps()
         {
             NotifyPropertyChanged(nameof(CmpDqsLeaderText));
             NotifyPropertyChanged(nameof(CmpDqsDeltaText));
+            NotifyPropertyChanged(nameof(CmpDqsSeparatorText));
             NotifyPropertyChanged(nameof(CmpDqsDeltaBrush));
             NotifyPropertyChanged(nameof(CmpPingLeaderText));
             NotifyPropertyChanged(nameof(CmpPingDeltaText));
+            NotifyPropertyChanged(nameof(CmpPingSeparatorText));
             NotifyPropertyChanged(nameof(CmpPingDeltaBrush));
             NotifyPropertyChanged(nameof(CmpJitterLeaderText));
             NotifyPropertyChanged(nameof(CmpJitterDeltaText));
+            NotifyPropertyChanged(nameof(CmpJitterSeparatorText));
             NotifyPropertyChanged(nameof(CmpJitterDeltaBrush));
             NotifyPropertyChanged(nameof(CmpLossLeaderText));
             NotifyPropertyChanged(nameof(CmpLossDeltaText));
+            NotifyPropertyChanged(nameof(CmpLossSeparatorText));
             NotifyPropertyChanged(nameof(CmpLossDeltaBrush));
             NotifyPropertyChanged(nameof(CmpDownLeaderText));
             NotifyPropertyChanged(nameof(CmpDownDeltaText));
+            NotifyPropertyChanged(nameof(CmpDownSeparatorText));
             NotifyPropertyChanged(nameof(CmpDownDeltaBrush));
             NotifyPropertyChanged(nameof(CmpUpLeaderText));
             NotifyPropertyChanged(nameof(CmpUpDeltaText));
+            NotifyPropertyChanged(nameof(CmpUpSeparatorText));
             NotifyPropertyChanged(nameof(CmpUpDeltaBrush));
         }
 
