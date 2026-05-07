@@ -924,11 +924,11 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0" Width="88" Text="{Binding CmpDqsLeaderText}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CmpDqsSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" Margin="3,0,3,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Width="14" Text="{Binding CmpDqsSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Width="88" Text="{Binding CmpDqsDeltaText}" Foreground="{Binding CmpDqsDeltaBrush}" FontSize="20" FontWeight="SemiBold" TextAlignment="Left"/>
 
                                         <TextBlock Grid.Row="1" Grid.Column="0" Width="88" Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CmpDqsSeparatorText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="3,2,3,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Width="14" Text="|" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Width="88" Text="выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Left"/>
                                     </Grid>
                                 </GroupBox>
@@ -946,16 +946,16 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0" Width="88" Text="{Binding CmpPingLeaderText}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CmpPingSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" Margin="3,0,3,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Width="14" Text="{Binding CmpPingSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Width="88" Text="{Binding CmpPingDeltaText}" Foreground="{Binding CmpPingDeltaBrush}" FontSize="20" FontWeight="SemiBold" TextAlignment="Left"/>
 
                                         <TextBlock Grid.Row="1" Grid.Column="0" Width="88" Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CmpPingSeparatorText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="3,2,3,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Width="14" Text="|" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Width="88" Text="выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Left"/>
                                     </Grid>
                                 </GroupBox>
                             </UniformGrid>
-                            <UniformGrid Rows="1" Columns="4" Grid.Row="1" Margin="0,12,0,0">
+                            <UniformGrid Rows="1" Columns="4" Grid.Row="1" Margin="0,16,0,0">
                                 <GroupBox Header="Ср. дрожание, мс" Margin="4,0,4,0"
                                           ToolTip="Меньше джиттер лучше — как для пинга.">
                                     <Grid HorizontalAlignment="Center">
@@ -970,11 +970,11 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0" Width="88" Text="{Binding CmpJitterLeaderText}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CmpJitterSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" Margin="3,0,3,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Width="14" Text="{Binding CmpJitterSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Width="88" Text="{Binding CmpJitterDeltaText}" Foreground="{Binding CmpJitterDeltaBrush}" FontSize="20" FontWeight="SemiBold" TextAlignment="Left"/>
 
                                         <TextBlock Grid.Row="1" Grid.Column="0" Width="88" Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CmpJitterSeparatorText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="3,2,3,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Width="14" Text="|" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Width="88" Text="выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Left"/>
                                     </Grid>
                                 </GroupBox>
@@ -992,11 +992,11 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0" Width="88" Text="{Binding CmpLossLeaderText}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CmpLossSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" Margin="3,0,3,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Width="14" Text="{Binding CmpLossSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Width="88" Text="{Binding CmpLossDeltaText}" Foreground="{Binding CmpLossDeltaBrush}" FontSize="20" FontWeight="SemiBold" TextAlignment="Left"/>
 
                                         <TextBlock Grid.Row="1" Grid.Column="0" Width="88" Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CmpLossSeparatorText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="3,2,3,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Width="14" Text="|" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Width="88" Text="выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Left"/>
                                     </Grid>
                                 </GroupBox>
@@ -1014,11 +1014,11 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0" Width="88" Text="{Binding CmpDownLeaderText}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CmpDownSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" Margin="3,0,3,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Width="14" Text="{Binding CmpDownSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Width="88" Text="{Binding CmpDownDeltaText}" Foreground="{Binding CmpDownDeltaBrush}" FontSize="20" FontWeight="SemiBold" TextAlignment="Left"/>
 
                                         <TextBlock Grid.Row="1" Grid.Column="0" Width="88" Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CmpDownSeparatorText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="3,2,3,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Width="14" Text="|" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Width="88" Text="выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Left"/>
                                     </Grid>
                                 </GroupBox>
@@ -1036,11 +1036,11 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0" Width="88" Text="{Binding CmpUpLeaderText}" Foreground="{StaticResource TextBrush}" FontSize="22" FontWeight="Bold" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CmpUpSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" Margin="3,0,3,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Width="14" Text="{Binding CmpUpSeparatorText}" Foreground="{StaticResource MutedTextBrush}" FontSize="16" FontWeight="Normal" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Width="88" Text="{Binding CmpUpDeltaText}" Foreground="{Binding CmpUpDeltaBrush}" FontSize="20" FontWeight="SemiBold" TextAlignment="Left"/>
 
                                         <TextBlock Grid.Row="1" Grid.Column="0" Width="88" Text="лидер" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Right"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CmpUpSeparatorText}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="3,2,3,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Width="14" Text="|" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Width="88" Text="выбранный" FontSize="11" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" TextAlignment="Left"/>
                                     </Grid>
                                 </GroupBox>
