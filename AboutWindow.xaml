@@ -40,16 +40,16 @@
                        FontSize="20"
                        FontWeight="Bold"
                        Foreground="{StaticResource TextBrush}"/>
-            <TextBlock Grid.Column="1"
-                       VerticalAlignment="Center">
-                <Run Text="Версия: " Foreground="{StaticResource MutedTextBrush}"/>
-                <Hyperlink Foreground="{StaticResource OkBrush}"
-                           TextDecorations="{x:Null}"
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <TextBlock Text="Версия: "
+                           Foreground="{StaticResource MutedTextBrush}"/>
+                <TextBlock Text="{Binding AppVersion}"
+                           Foreground="{StaticResource OkBrush}"
                            Cursor="Hand"
-                           Click="OpenRelease_Click">
-                    <Run Text="{Binding ElementName=AboutRoot, Path=AppVersion}"/>
-                </Hyperlink>
-            </TextBlock>
+                           MouseLeftButtonDown="OpenReleaseText_Click"/>
+            </StackPanel>
         </Grid>
 
         <Border Grid.Row="1"

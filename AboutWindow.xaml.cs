@@ -36,6 +36,11 @@ namespace VpnSpeedAnalyzer
             }
         }
 
+        private void OpenReleaseText_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            OpenRelease_Click(sender, new RoutedEventArgs());
+        }
+
         private void RootBorder_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             try
