@@ -54,6 +54,9 @@ namespace VpnSpeedAnalyzer.Logic
         private int _vpnTailConfirmMaxDelta;
         private DateTime _vpnTailWindowStartUtc = DateTime.MinValue;
         private DateTime _vpnTailLastSummaryUtc = DateTime.MinValue;
+        private DateTime _lastMonitorDecisionLogUtc = DateTime.MinValue;
+        private DateTime _lastSkipReasonLogUtc = DateTime.MinValue;
+        private string _lastSkipReasonKey = string.Empty;
 
         private bool _forceRunRequested;
         private bool _isMeasurementInFlight;
@@ -410,13 +413,24 @@ namespace VpnSpeedAnalyzer.Logic
                                               && !intervalElapsed
                                               && sinceLastMeasurement < MinAutomaticRunGap;
                         var shouldMeasure = userRequested || (automaticTrigger && !autoGapTooShort);
+                        var elapsedSecForLog = firstMeasurement ? 0 : sinceLastMeasurement.TotalSeconds;
 
                         // TAIL-волны не триггерят замер; подробный лог по ним агрегируется в RecordTailConfirmation.
-
-                        Logger.Write(
-                            $"Тик монитора: vpnTransportChanged={vpnTransportChanged}, primary={vpnTransportPrimary}, triggerByHost={vpnTransportChangedForMeasurement}, " +
-                            $"первыйЗамер={firstMeasurement}, прошло={sinceLastMeasurement.TotalSeconds:F0}s, " +
-                            $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, inFlight={_isMeasurementInFlight}, run={shouldMeasure}");
+                        var monitorDecisionLogImportant = shouldMeasure
+                                                         || userRequested
+                                                         || vpnTransportChanged
+                                                         || intervalElapsed
+                                                         || autoGapTooShort;
+                        var monitorDecisionLogPeriodic = _lastMonitorDecisionLogUtc == DateTime.MinValue
+                                                         || (utcNow - _lastMonitorDecisionLogUtc) >= TimeSpan.FromSeconds(5);
+                        if (monitorDecisionLogImportant || monitorDecisionLogPeriodic)
+                        {
+                            Logger.Write(
+                                $"Тик монитора: vpnTransportChanged={vpnTransportChanged}, primary={vpnTransportPrimary}, triggerByHost={vpnTransportChangedForMeasurement}, " +
+                                $"первыйЗамер={firstMeasurement}, прошло={elapsedSecForLog:F0}s, " +
+                                $"intervalElapsed={intervalElapsed}, force={userRequested}, antiBounce={autoGapTooShort}, inFlight={_isMeasurementInFlight}, run={shouldMeasure}");
+                            _lastMonitorDecisionLogUtc = utcNow;
+                        }
 
                         if (shouldMeasure)
                         {
@@ -507,12 +521,13 @@ namespace VpnSpeedAnalyzer.Logic
                         {
                             if (autoGapTooShort)
                             {
-                                Logger.Write(
-                                    $"Замер пропущен: анти-дребезг автозапуска (прошло {sinceLastMeasurement.TotalSeconds:F0}с, минимум {MinAutomaticRunGap.TotalSeconds:F0}с)");
+                                WriteSkipReasonLog(
+                                    "antibounce",
+                                    $"Замер пропущен: анти-дребезг автозапуска (прошло {elapsedSecForLog:F0}с, минимум {MinAutomaticRunGap.TotalSeconds:F0}с)");
                             }
                             else
                             {
-                                Logger.Write("Замер пропущен: VPN transport стабилен и таймер не истёк");
+                                WriteSkipReasonLog("stable", "Замер пропущен: VPN transport стабилен и таймер не истёк");
                             }
                         }
 
@@ -627,6 +642,20 @@ namespace VpnSpeedAnalyzer.Logic
             {
                 _delayCts = null;
             }
+        }
+
+        private void WriteSkipReasonLog(string reasonKey, string message)
+        {
+            var nowUtc = DateTime.UtcNow;
+            var changed = !string.Equals(_lastSkipReasonKey, reasonKey, StringComparison.Ordinal);
+            var periodic = _lastSkipReasonLogUtc == DateTime.MinValue
+                           || (nowUtc - _lastSkipReasonLogUtc) >= TimeSpan.FromSeconds(5);
+            if (!changed && !periodic)
+                return;
+
+            Logger.Write(message);
+            _lastSkipReasonKey = reasonKey;
+            _lastSkipReasonLogUtc = nowUtc;
         }
     }
 }

@@ -669,6 +669,10 @@
                                                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                                                         <Setter Property="Opacity" Value="1"/>
                                                                     </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
+                                                                        <Setter Property="Foreground" Value="#0E1A22"/>
+                                                                        <Setter Property="Opacity" Value="1"/>
+                                                                    </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
                                                         </TextBlock.Style>
