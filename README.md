@@ -133,3 +133,9 @@ dotnet publish VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained tr
 
 - Логи: `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs` (кратко: файл на запуск, автоочистка).
 - Замеры делает локально установленная `speedtest.exe` — внешние сервисы используются только для определения IP/страны/ASN.
+
+## Лицензия сторонних компонентов
+
+- `speedtest.exe` (Ookla Speedtest CLI) является сторонним компонентом Ookla.
+- Пользователь скачивает его отдельно с официального сайта: <https://www.speedtest.net/apps/cli>.
+- Использование `speedtest.exe` регулируется условиями и лицензией Ookla; приложение не изменяет и не переупаковывает этот бинарник.
