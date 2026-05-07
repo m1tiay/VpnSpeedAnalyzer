@@ -243,8 +243,9 @@ namespace VpnSpeedAnalyzer.Logic
 
             _lastVpnTransportFingerprint = fingerprint;
             _vpnDebounceChangeInProgress = false;
-            _lastConfirmedVpnTransportChangeUtc = nowUtc;
             isPrimarySwitch = string.Equals(switchClass, "PRIMARY", StringComparison.Ordinal);
+            if (isPrimarySwitch)
+                _lastConfirmedVpnTransportChangeUtc = nowUtc;
             decisionLog =
                 $"смена подтверждена: class={switchClass}, delta={delta}, выдержка={waitedMs:F0}мс, endpoints={CountFingerprintEndpoints(fingerprint)}";
             return true;
