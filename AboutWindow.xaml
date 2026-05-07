@@ -13,13 +13,7 @@
         ResizeMode="NoResize"
         Background="Transparent">
     <Grid Margin="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-
-        <Border Grid.Row="0"
-                Background="{StaticResource PanelBrush}"
+        <Border Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource PanelSecondaryBrush}"
                 BorderThickness="1"
                 CornerRadius="10"
@@ -28,6 +22,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
         <Grid>
@@ -79,40 +74,31 @@
             </Grid>
         </Border>
 
+        <Grid Grid.Row="2" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Left">
+                <Hyperlink Foreground="{StaticResource OkBrush}"
+                           TextDecorations="{x:Null}"
+                           Cursor="Hand"
+                           Click="OpenProject_Click">
+                    created by daver
+                </Hyperlink>
+            </TextBlock>
+
+            <Button Grid.Column="1"
+                    Content="Закрыть"
+                    Width="100"
+                    Margin="0"
+                    HorizontalAlignment="Right"
+                    Click="Close_Click"/>
         </Grid>
-        </Border>
-
-        <Border Grid.Row="1"
-                Margin="0,8,0,0"
-                Padding="8,10,8,10"
-                Background="{StaticResource PanelBrush}"
-                BorderBrush="{StaticResource PanelSecondaryBrush}"
-                BorderThickness="1"
-                CornerRadius="10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Left">
-                    <Hyperlink Foreground="{StaticResource OkBrush}"
-                               TextDecorations="{x:Null}"
-                               Cursor="Hand"
-                               Click="OpenProject_Click">
-                        created by daver
-                    </Hyperlink>
-                </TextBlock>
-
-                <Button Grid.Column="2"
-                        Content="Закрыть"
-                        Width="100"
-                        HorizontalAlignment="Right"
-                        Click="Close_Click"/>
-            </Grid>
+        </Grid>
         </Border>
     </Grid>
 </Window>
