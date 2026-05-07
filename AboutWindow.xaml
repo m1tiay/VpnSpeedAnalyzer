@@ -12,7 +12,7 @@
         AllowsTransparency="True"
         ResizeMode="NoResize"
         Background="Transparent">
-    <Grid Margin="24,12,24,12">
+    <Grid Margin="12">
         <Border Background="{StaticResource BgBrush}"
                 BorderBrush="{StaticResource PanelSecondaryBrush}"
                 BorderThickness="1"
