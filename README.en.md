@@ -10,10 +10,7 @@ VPN connection quality and choosing the best host based on real measurements.
 1. Download the app and run it on Windows.
 2. Download `speedtest.exe` (Ookla CLI): <https://www.speedtest.net/apps/cli>.
 3. Place `speedtest.exe` next to `VpnSpeedAnalyzer.exe` (recommended).
-4. Make sure **both `VpnSpeedAnalyzer.exe` and `speedtest.exe` use the same VPN tunnel** you want to evaluate.
-5. Click `Start` and wait for the first successful measurement.
-
-If `speedtest.exe` is next to `VpnSpeedAnalyzer.exe` and both go through the same VPN, no extra setup is usually required.
+4. Click `Start` and wait for the first successful measurement.
 
 ## Core application logic
 
