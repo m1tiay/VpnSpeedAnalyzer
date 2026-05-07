@@ -475,7 +475,16 @@ namespace VpnSpeedAnalyzer.Logic
                                 else
                                 {
                                     var reason = _speedtest.LastFailureReason ?? "Неизвестная ошибка speedtest";
-                                    StatusMessage?.Invoke(this, $"ERROR:Ошибка замера: {reason}");
+                                    var cancelledByUser = token.IsCancellationRequested
+                                                          || string.Equals(reason, "Замер отменён", StringComparison.Ordinal);
+                                    if (cancelledByUser)
+                                    {
+                                        Logger.Write("Замер отменен пользователем — статус ошибки не показываем");
+                                    }
+                                    else
+                                    {
+                                        StatusMessage?.Invoke(this, $"ERROR:Ошибка замера: {reason}");
+                                    }
                                 }
                             }
                             finally
