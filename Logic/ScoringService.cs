@@ -73,7 +73,7 @@ namespace VpnSpeedAnalyzer.Logic
             if (result == null) throw new ArgumentNullException(nameof(result));
 
             return $"{ActiveProfile}: ping {Math.Round(result.Ping, 2)} мс, " +
-                   $"дрожание {Math.Round(result.Jitter, 2)} мс, " +
+                   $"джиттер {Math.Round(result.Jitter, 2)} мс, " +
                    $"потери {Math.Round(result.Loss, 2)}%, " +
                    $"загрузка {Math.Round(result.Download, 2)} Мбит/с, " +
                    $"отдача {Math.Round(result.Upload, 2)} Мбит/с";
@@ -89,7 +89,7 @@ namespace VpnSpeedAnalyzer.Logic
         /// </summary>
         public static string Describe(string profile) => profile switch
         {
-            ProfileGaming => "Игры: максимальный приоритет низкому пингу, дрожанию и потерям. Скорости учитываются меньше.",
+            ProfileGaming => "Игры: максимальный приоритет низкому пингу, джиттеру и потерям. Скорости учитываются меньше.",
             ProfileStreaming => "Стрим: повышенный вес загрузки и отдачи при сохранении умеренных требований к задержке.",
             _ => "Универсальный: сбалансированный профиль для общего использования интернета и VPN."
         };

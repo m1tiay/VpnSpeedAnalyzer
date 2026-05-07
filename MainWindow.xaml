@@ -323,7 +323,7 @@
                     <Setter Property="ToolTip" Value="Сбалансированный профиль: задержка, стабильность и скорость учитываются равномерно."/>
                 </Trigger>
                 <Trigger Property="Content" Value="Игры">
-                    <Setter Property="ToolTip" Value="Профиль для игр: основной упор на минимальный пинг, дрожание и потери."/>
+                    <Setter Property="ToolTip" Value="Профиль для игр: основной упор на минимальный пинг, джиттер и потери."/>
                 </Trigger>
                 <Trigger Property="Content" Value="Стрим">
                     <Setter Property="ToolTip" Value="Профиль для стрима: выше приоритет скоростей загрузки и отдачи при приемлемой задержке."/>
@@ -707,7 +707,7 @@
                             <ColumnDefinition Width="8"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <GroupBox Grid.Column="0" Header="Дрожание (мс)" Margin="0">
+                        <GroupBox Grid.Column="0" Header="Джиттер (мс)" Margin="0">
                             <sp:WpfPlot x:Name="JitterPlot" Margin="-6,-4,-6,-6"/>
                         </GroupBox>
                         <GroupBox Grid.Column="2" Header="Пинг (мс)" Margin="0">
@@ -784,7 +784,7 @@
                                         <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="*"/>
                                         <DataGridTextColumn Header="D.Q.S" Binding="{Binding Score, StringFormat=F2}" Width="0.8*" SortMemberPath="Score"/>
                                         <DataGridTextColumn Header="Пинг" Binding="{Binding Ping}" Width="0.8*" SortMemberPath="Ping"/>
-                                        <DataGridTextColumn Header="Дрожание" Binding="{Binding Jitter}" Width="0.8*" SortMemberPath="Jitter"/>
+                                        <DataGridTextColumn Header="Джиттер" Binding="{Binding Jitter}" Width="0.8*" SortMemberPath="Jitter"/>
                                         <DataGridTextColumn Header="Потери" Binding="{Binding Loss}" Width="0.8*" SortMemberPath="Loss"/>
                                         <DataGridTextColumn Header="Загрузка" Binding="{Binding Download}" Width="0.8*" SortMemberPath="Download"/>
                                         <DataGridTextColumn Header="Отдача" Binding="{Binding Upload}" Width="0.8*" SortMemberPath="Upload"/>
@@ -945,7 +945,7 @@
                                                HorizontalAlignment="Center"/>
                                 </GroupBox>
                                 <GroupBox Header="Ср. D.Q.S" Margin="4,0,4,0"
-                                          ToolTip="Число по лидеру таблицы (#1). Выберите строку — покажем Δ к лидеру: для D.Q.S «+» выгодно (зелёный), «−» хуже (красный).">
+                                          ToolTip="D.Q.S — итоговая оценка качества соединения. Чем больше, тем лучше: «+Δ» лучше, «−Δ» хуже.">
                                     <Grid HorizontalAlignment="Center">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -967,7 +967,7 @@
                                     </Grid>
                                 </GroupBox>
                                 <GroupBox Header="Ср. пинг, мс" Margin="4,0,4,0"
-                                          ToolTip="По лидеру. Для пинга меньше лучше: «+Δ» к худшему красным, «−Δ» к лучшему зелёным.">
+                                          ToolTip="Пинг — задержка отклика в мс. Чем меньше, тем лучше: «+Δ» хуже, «−Δ» лучше.">
                                     <Grid HorizontalAlignment="Center">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -990,8 +990,8 @@
                                 </GroupBox>
                             </UniformGrid>
                             <UniformGrid Rows="1" Columns="4" Grid.Row="1" Margin="0,16,0,0">
-                                <GroupBox Header="Ср. дрожание, мс" Margin="4,0,4,0"
-                                          ToolTip="Меньше джиттер лучше — как для пинга.">
+                                <GroupBox Header="Ср. джиттер, мс" Margin="4,0,4,0"
+                                          ToolTip="Джиттер — колебание задержки (стабильность канала). Чем меньше, тем лучше: «+Δ» хуже, «−Δ» лучше.">
                                     <Grid HorizontalAlignment="Center">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -1013,7 +1013,7 @@
                                     </Grid>
                                 </GroupBox>
                                 <GroupBox Header="Ср. потери %" Margin="4,0,4,0"
-                                          ToolTip="Меньше потери лучше.">
+                                          ToolTip="Потери — доля потерянных пакетов в %. Чем меньше, тем лучше: «+Δ» хуже, «−Δ» лучше.">
                                     <Grid HorizontalAlignment="Center">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -1035,7 +1035,7 @@
                                     </Grid>
                                 </GroupBox>
                                 <GroupBox Header="Ср. загрузка, Мбит/с" Margin="4,0,4,0"
-                                          ToolTip="Выше скорость лучше: «+Δ» к выгоде — зелёный.">
+                                          ToolTip="Загрузка — скорость получения данных (download). Чем больше, тем лучше: «+Δ» лучше, «−Δ» хуже.">
                                     <Grid HorizontalAlignment="Center">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -1057,7 +1057,7 @@
                                     </Grid>
                                 </GroupBox>
                                 <GroupBox Header="Ср. отдача, Мбит/с" Margin="4,0,4,0"
-                                          ToolTip="Выше отдача лучше — как загрузка.">
+                                          ToolTip="Отдача — скорость отправки данных (upload). Чем больше, тем лучше: «+Δ» лучше, «−Δ» хуже.">
                                     <Grid HorizontalAlignment="Center">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -1106,7 +1106,7 @@
                                             <DataGridTextColumn Header="Ср. D.Q.S" Binding="{Binding AverageScore, StringFormat=F2}" Width="0.9*"/>
                                             <DataGridTextColumn Header="Лучший D.Q.S" Binding="{Binding BestScore, StringFormat=F2}" Width="0.9*"/>
                                             <DataGridTextColumn Header="Ср. пинг" Binding="{Binding AveragePing, StringFormat=F2}" Width="0.9*"/>
-                                            <DataGridTextColumn Header="Ср. дрожание" Binding="{Binding AverageJitter, StringFormat=F2}" Width="1*"/>
+                                            <DataGridTextColumn Header="Ср. джиттер" Binding="{Binding AverageJitter, StringFormat=F2}" Width="1*"/>
                                             <DataGridTextColumn Header="Ср. потери" Binding="{Binding AverageLoss, StringFormat=F2}" Width="0.9*"/>
                                             <DataGridTextColumn Header="Ср. загрузка" Binding="{Binding AverageDownloadMbps, StringFormat=F2}" Width="1*"/>
                                             <DataGridTextColumn Header="Ср. отдача" Binding="{Binding AverageUploadMbps, StringFormat=F2}" Width="1*"/>
