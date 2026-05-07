@@ -52,5 +52,14 @@ namespace VpnSpeedAnalyzer.Models
 
         /// <summary>Подсказка для маркера в таблице мониторинга</summary>
         public string RankMarkerToolTip { get; set; } = "";
+
+        /// <summary>Метка типа замера для правой части строки мониторинга</summary>
+        public string MeasurementMarker { get; set; } = "";
+
+        /// <summary>HEX-цвет метки типа замера</summary>
+        public string MeasurementMarkerColor { get; set; } = "#A8B0D9";
+
+        /// <summary>Подсказка для метки типа замера</summary>
+        public string MeasurementMarkerToolTip { get; set; } = "";
     }
 }
