@@ -8,7 +8,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
   release:
-    types: [created, published]
+    types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   build:
