@@ -18,22 +18,10 @@ namespace VpnSpeedAnalyzer
 
         public AboutWindow()
         {
-            AppVersion = AppVersionInfo.InformationalVersion;
+            AppVersion = AppVersionInfo.ProductVersion;
             ReleaseNotes = ReleaseNotesProvider.GetCurrent();
             InitializeComponent();
             DataContext = this;
-        }
-
-        private void CopyVersion_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Clipboard.SetText(AppVersion);
-            }
-            catch (Exception ex)
-            {
-                Logger.Write($"Не удалось скопировать версию: {ex.Message}");
-            }
         }
 
         private void OpenRelease_Click(object sender, RoutedEventArgs e)
@@ -45,6 +33,19 @@ namespace VpnSpeedAnalyzer
             catch (Exception ex)
             {
                 Logger.Write($"Не удалось открыть страницу релиза: {ex.Message}");
+            }
+        }
+
+        private void RootBorder_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
+                    DragMove();
+            }
+            catch
+            {
+                // Игнорируем сбои перетаскивания окна.
             }
         }
 

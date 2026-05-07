@@ -7,8 +7,10 @@
         MinWidth="520"
         MinHeight="380"
         WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
         ResizeMode="NoResize"
-        Background="#141622">
+        Background="Transparent">
     <Window.Resources>
         <SolidColorBrush x:Key="BgBrush" Color="#141622"/>
         <SolidColorBrush x:Key="PanelBrush" Color="#1D2033"/>
@@ -59,18 +61,24 @@
         </Style>
     </Window.Resources>
 
-    <Border Margin="12"
-            Background="{StaticResource PanelBrush}"
-            BorderBrush="{StaticResource PanelSecondaryBrush}"
-            BorderThickness="1"
-            CornerRadius="10">
-    <Grid Margin="14">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource PanelSecondaryBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                MouseLeftButtonDown="RootBorder_MouseLeftButtonDown">
+        <Grid Margin="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
         <TextBlock Text="VPN Speed Analyzer"
                    FontSize="20"
@@ -81,15 +89,15 @@
             <TextBlock Text="Версия:"
                        Foreground="{StaticResource MutedTextBrush}"
                        VerticalAlignment="Center"/>
-            <TextBlock Text="{Binding AppVersion}"
-                       Margin="8,0,0,0"
-                       Foreground="{StaticResource OkBrush}"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Center"/>
-            <Button Content="Копировать"
-                    Padding="8,4"
-                    Margin="12,0,0,0"
-                    Click="CopyVersion_Click"/>
+            <TextBlock Margin="8,0,0,0"
+                       VerticalAlignment="Center">
+                <Hyperlink Foreground="{StaticResource OkBrush}"
+                           TextDecorations="{x:Null}"
+                           Cursor="Hand"
+                           Click="OpenRelease_Click">
+                    <Run Text="{Binding AppVersion}"/>
+                </Hyperlink>
+            </TextBlock>
         </StackPanel>
 
         <Border Grid.Row="2"
@@ -118,31 +126,35 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="3" Margin="0,12,0,0">
+        </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
-            <Button Grid.Column="0"
-                    Content="created by daver"
-                    Width="130"
-                    HorizontalAlignment="Left"
-                    Foreground="{StaticResource OkBrush}"
-                    Click="OpenProject_Click"/>
 
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-                <Button Content="Страница релиза"
-                        Width="130"
-                        Margin="0,0,8,0"
-                        Click="OpenRelease_Click"/>
+                        HorizontalAlignment="Center">
                 <Button Content="Закрыть"
                         Width="100"
                         Click="Close_Click"/>
             </StackPanel>
+
+            <TextBlock Grid.Column="2"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Right">
+                <Hyperlink Foreground="{StaticResource OkBrush}"
+                           TextDecorations="{x:Null}"
+                           Cursor="Hand"
+                           Click="OpenProject_Click">
+                    created by daver
+                </Hyperlink>
+            </TextBlock>
         </Grid>
     </Grid>
-    </Border>
 </Window>
