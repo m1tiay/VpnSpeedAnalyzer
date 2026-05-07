@@ -11,6 +11,8 @@ namespace VpnSpeedAnalyzer
             try
             {
                 Logger.Write("=== ПРИЛОЖЕНИЕ ЗАПУСКАЕТСЯ ===");
+                Logger.Write($"Версия приложения: {AppVersionInfo.InformationalVersion}");
+                ReleaseStateService.HandleStartup();
 
                 AppDomain.CurrentDomain.UnhandledException += (s, e) =>
                 {

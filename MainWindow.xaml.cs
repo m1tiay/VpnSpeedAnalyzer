@@ -237,5 +237,21 @@ namespace VpnSpeedAnalyzer
                 Logger.Write($"Не удалось открыть папку логов: {ex.Message}");
             }
         }
+
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var about = new AboutWindow
+                {
+                    Owner = this
+                };
+                about.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Logger.Write($"Не удалось открыть окно 'О приложении': {ex.Message}");
+            }
+        }
     }
 }
