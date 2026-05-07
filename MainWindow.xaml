@@ -929,7 +929,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <UniformGrid Rows="1" Columns="4" Grid.Row="0">
+                            <UniformGrid Rows="1" Columns="4" Grid.Row="0" Margin="-4,0,-4,0">
                                 <GroupBox Header="Всего замеров" Margin="4,0,4,0">
                                     <TextBlock Text="{Binding TotalMeasurements}"
                                                Foreground="{StaticResource TextBrush}"
@@ -989,7 +989,7 @@
                                     </Grid>
                                 </GroupBox>
                             </UniformGrid>
-                            <UniformGrid Rows="1" Columns="4" Grid.Row="1" Margin="0,16,0,0">
+                            <UniformGrid Rows="1" Columns="4" Grid.Row="1" Margin="-4,16,-4,0">
                                 <GroupBox Header="Ср. джиттер, мс" Margin="4,0,4,0"
                                           ToolTip="Джиттер — колебание задержки (стабильность канала). Чем меньше, тем лучше: «+Δ» хуже, «−Δ» лучше.">
                                     <Grid HorizontalAlignment="Center">
@@ -1126,7 +1126,7 @@
             </TabItem>
         </TabControl>
 
-        <Grid Grid.Row="2" Margin="0,8,0,0">
+        <Grid Grid.Row="2" Margin="8,8,8,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
