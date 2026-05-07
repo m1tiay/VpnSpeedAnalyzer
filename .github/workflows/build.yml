@@ -56,13 +56,19 @@ jobs:
       - name: 📦 Публикация Release EXE (standalone)
         run: dotnet publish VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained true -o out
 
+      # Переименовываем бинарник, чтобы в релизе была понятна целевая OS/архитектура
+      - name: 🏷️ Переименование EXE под платформу
+        shell: pwsh
+        run: |
+          Move-Item -Path out/VpnSpeedAnalyzer.exe -Destination out/VpnSpeedAnalyzer-win-x64.exe -Force
+
       # Считаем SHA256 для проверки целостности артефакта
       - name: 🔐 SHA256 артефакта
         shell: pwsh
         run: |
-          $hash = Get-FileHash -Algorithm SHA256 -Path out/VpnSpeedAnalyzer.exe
-          "$($hash.Hash)  VpnSpeedAnalyzer.exe" | Out-File -Encoding ASCII out/VpnSpeedAnalyzer.exe.sha256
-          Get-Content out/VpnSpeedAnalyzer.exe.sha256
+          $hash = Get-FileHash -Algorithm SHA256 -Path out/VpnSpeedAnalyzer-win-x64.exe
+          "$($hash.Hash)  VpnSpeedAnalyzer-win-x64.exe" | Out-File -Encoding ASCII out/VpnSpeedAnalyzer-win-x64.exe.sha256
+          Get-Content out/VpnSpeedAnalyzer-win-x64.exe.sha256
 
       # Загружаем артефакт в GitHub Actions
       - name: 📤 Загрузка артефакта
@@ -70,8 +76,8 @@ jobs:
         with:
           name: VpnSpeedAnalyzer-Release
           path: |
-            out/VpnSpeedAnalyzer.exe
-            out/VpnSpeedAnalyzer.exe.sha256
+            out/VpnSpeedAnalyzer-win-x64.exe
+            out/VpnSpeedAnalyzer-win-x64.exe.sha256
           retention-days: 30
 
       # При релизе - добавляем exe + sha256 в релиз GitHub
@@ -80,7 +86,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            out/VpnSpeedAnalyzer.exe
-            out/VpnSpeedAnalyzer.exe.sha256
+            out/VpnSpeedAnalyzer-win-x64.exe
+            out/VpnSpeedAnalyzer-win-x64.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
