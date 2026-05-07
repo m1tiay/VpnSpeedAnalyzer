@@ -13,12 +13,13 @@
         ResizeMode="NoResize"
         Background="Transparent">
     <Grid Margin="12">
-        <Border Background="{StaticResource PanelBrush}"
+        <Border Background="{StaticResource BgBrush}"
                 BorderBrush="{StaticResource PanelSecondaryBrush}"
                 BorderThickness="1"
                 CornerRadius="10"
+                Padding="12"
                 MouseLeftButtonDown="RootBorder_MouseLeftButtonDown">
-        <Grid Margin="8">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
