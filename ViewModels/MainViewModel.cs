@@ -1053,7 +1053,7 @@ namespace VpnSpeedAnalyzer
                 _ => "С"
             };
 
-            return isLatest ? $"●{letter}" : $"·{letter}";
+            return isLatest ? $"●{letter}" : letter;
         }
 
         private static string PickTriggerMarkerColor(string triggerKind, bool isLatest)
@@ -1061,13 +1061,7 @@ namespace VpnSpeedAnalyzer
             if (isLatest)
                 return "#59D9B7";
 
-            return triggerKind switch
-            {
-                "manual" => "#F6C453",
-                "auto_host" => "#B07DFF",
-                "auto_timer" => "#A8B0D9",
-                _ => "#7AB8FF"
-            };
+            return "#8A92BB";
         }
 
         private static string BuildTriggerToolTip(string triggerKind, bool isLatest)

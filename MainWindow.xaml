@@ -81,6 +81,7 @@
         <Style TargetType="DataGridRow">
             <Setter Property="Background" Value="#1D2033"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="MinHeight" Value="26"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{StaticResource OkBrush}"/>
@@ -99,6 +100,8 @@
 
         <Style TargetType="DataGridCell">
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{StaticResource OkBrush}"/>
@@ -122,6 +125,8 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <Style TargetType="ComboBox">
@@ -631,9 +636,9 @@
                                                     <TextBlock Text="{Binding RankMarker}"
                                                                Foreground="{Binding RankMarkerColor}"
                                                                ToolTip="{Binding RankMarkerToolTip}"
-                                                               FontSize="15"
+                                                               FontSize="14"
                                                                TextAlignment="Center"
-                                                               Margin="0,-2,0,0"
+                                                               Margin="0,-1,0,0"
                                                                HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
                                                 </DataTemplate>
@@ -654,11 +659,25 @@
                                                     <TextBlock Text="{Binding MeasurementMarker}"
                                                                Foreground="{Binding MeasurementMarkerColor}"
                                                                ToolTip="{Binding MeasurementMarkerToolTip}"
-                                                               FontSize="15"
+                                                               FontSize="12"
+                                                               FontWeight="Normal"
+                                                               Opacity="0.78"
                                                                TextAlignment="Center"
-                                                               Margin="0,-2,0,0"
+                                                               Margin="0,-1,0,0"
                                                                HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center"/>
+                                                               VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsLatestMeasurement}" Value="True">
+                                                                        <Setter Property="FontSize" Value="13"/>
+                                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                        <Setter Property="Opacity" Value="1"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -1009,9 +1028,9 @@
                                                         <TextBlock Text="{Binding RankMarker}"
                                                                    Foreground="{Binding RankMarkerColor}"
                                                                    ToolTip="{Binding RankMarkerToolTip}"
-                                                                   FontSize="15"
+                                                                   FontSize="14"
                                                                    TextAlignment="Center"
-                                                                   Margin="0,-2,0,0"
+                                                                   Margin="0,-1,0,0"
                                                                    HorizontalAlignment="Center"
                                                                    VerticalAlignment="Center"/>
                                                     </DataTemplate>
