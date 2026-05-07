@@ -57,6 +57,7 @@ namespace VpnSpeedAnalyzer.Logic
 
         private bool _forceRunRequested;
         private bool _isMeasurementInFlight;
+        private string _pendingTriggerKind = "auto_start";
 
         public event EventHandler<SpeedtestResult>? NewResult;
 
@@ -426,6 +427,13 @@ namespace VpnSpeedAnalyzer.Logic
                                     : firstMeasurement
                                         ? "старт мониторинга"
                                         : "по таймеру";
+                            _pendingTriggerKind = userRequested
+                                ? "manual"
+                                : vpnTransportChangedForMeasurement
+                                    ? "auto_host"
+                                    : firstMeasurement
+                                        ? "auto_start"
+                                        : "auto_timer";
 
                             StatusMessage?.Invoke(this, $"CHECK:Замер скорости ({reasonText})");
                             Logger.Write($"Запускаем тест скорости: {reasonText}");
@@ -442,6 +450,7 @@ namespace VpnSpeedAnalyzer.Logic
 
                                 if (result != null)
                                 {
+                                    result.TriggerKind = _pendingTriggerKind;
                                     // Обогащаем результат геоданными (один HTTP на замер — с текущим выходом в интернет после VPN).
                                     var geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
 

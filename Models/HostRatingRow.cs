@@ -6,6 +6,9 @@ namespace VpnSpeedAnalyzer.Models
     public class HostRatingRow
     {
         public int Rank { get; set; }
+        public string RankMarker { get; set; } = "";
+        public string RankMarkerColor { get; set; } = "#A8B0D9";
+        public string RankMarkerToolTip { get; set; } = "";
         public string Ip { get; set; } = "";
         public string Country { get; set; } = "";
         public int Samples { get; set; }

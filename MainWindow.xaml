@@ -630,6 +630,7 @@
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding RankMarker}"
                                                                Foreground="{Binding RankMarkerColor}"
+                                                               ToolTip="{Binding RankMarkerToolTip}"
                                                                FontSize="15"
                                                                HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
@@ -955,7 +956,49 @@
                                               CanUserAddRows="False"
                                               IsReadOnly="True"
                                               ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                        <DataGrid.RowStyle>
+                                            <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Rank}" Value="1"/>
+                                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Background" Value="#3B2F10"/>
+                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Rank}" Value="2"/>
+                                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Background" Value="#2D3440"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Rank}" Value="3"/>
+                                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Background" Value="#3A2A24"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGrid.RowStyle>
                                         <DataGrid.Columns>
+                                            <DataGridTemplateColumn Header="" Width="0.35*">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding RankMarker}"
+                                                                   Foreground="{Binding RankMarkerColor}"
+                                                                   ToolTip="{Binding RankMarkerToolTip}"
+                                                                   FontSize="15"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"/>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
                                             <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
                                             <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="1.2*"/>
                                             <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="1*"/>

@@ -530,6 +530,7 @@ namespace VpnSpeedAnalyzer
 
                     var entry = new ResultEntry
                     {
+                        TriggerKind = string.IsNullOrWhiteSpace(r.TriggerKind) ? "auto_start" : r.TriggerKind,
                         Ip = r.Ip,
                         Country = r.Country,
                         Timestamp = r.Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss"),
@@ -541,6 +542,10 @@ namespace VpnSpeedAnalyzer
                     };
                     entry.Score = _scoring.Calculate(entry);
                     entry.ScoreDetails = _scoring.BuildDetails(entry);
+
+                    foreach (var existing in Results)
+                        existing.IsLatestMeasurement = false;
+                    entry.IsLatestMeasurement = true;
 
                     _resultsManager.AddResult(entry);
 
@@ -993,8 +998,9 @@ namespace VpnSpeedAnalyzer
             foreach (var entry in Results)
             {
                 entry.Rank = 0;
-                entry.RankMarker = "";
-                entry.RankMarkerColor = "#A8B0D9";
+                entry.RankMarker = BuildTriggerMarker(entry.TriggerKind, entry.IsLatestMeasurement);
+                entry.RankMarkerColor = PickTriggerMarkerColor(entry.TriggerKind, entry.IsLatestMeasurement);
+                entry.RankMarkerToolTip = BuildTriggerToolTip(entry.TriggerKind, entry.IsLatestMeasurement);
             }
 
             var rankedResults = _resultsManager.GetTopResults(Results.Count);
@@ -1010,16 +1016,64 @@ namespace VpnSpeedAnalyzer
                     3 => "#D08A5C",
                     _ => "#A8B0D9"
                 };
+                item.RankMarkerToolTip = item.Rank switch
+                {
+                    1 => "Топ-1 по D.Q.S среди всех замеров",
+                    2 => "Топ-2 по D.Q.S среди всех замеров",
+                    3 => "Топ-3 по D.Q.S среди всех замеров",
+                    _ => item.RankMarkerToolTip
+                };
 
                 if (item.Rank > TopHostsCount)
                 {
-                    item.RankMarker = "";
+                    // Вне топ-3 оставляем только маркер источника/последнего замера.
                 }
             }
 
             TopHosts.Clear();
             foreach (var topItem in rankedResults.Take(TopHostsCount))
                 TopHosts.Add(topItem);
+        }
+
+        private static string BuildTriggerMarker(string triggerKind, bool isLatest)
+        {
+            var letter = triggerKind switch
+            {
+                "manual" => "Р",
+                "auto_host" => "Х",
+                "auto_timer" => "Т",
+                _ => "С"
+            };
+
+            return isLatest ? $"●{letter}" : $"·{letter}";
+        }
+
+        private static string PickTriggerMarkerColor(string triggerKind, bool isLatest)
+        {
+            if (isLatest)
+                return "#59D9B7";
+
+            return triggerKind switch
+            {
+                "manual" => "#F6C453",
+                "auto_host" => "#B07DFF",
+                "auto_timer" => "#A8B0D9",
+                _ => "#7AB8FF"
+            };
+        }
+
+        private static string BuildTriggerToolTip(string triggerKind, bool isLatest)
+        {
+            var sourceText = triggerKind switch
+            {
+                "manual" => "Источник: ручной замер",
+                "auto_host" => "Источник: авто по смене VPN-хоста",
+                "auto_timer" => "Источник: авто по таймеру",
+                _ => "Источник: авто при старте мониторинга"
+            };
+
+            var latestText = isLatest ? "Это последний выполненный замер." : "Это предыдущий замер.";
+            return $"{latestText} {sourceText}";
         }
 
         private void UpdateHostAnalytics()
@@ -1079,6 +1133,30 @@ namespace VpnSpeedAnalyzer
             foreach (var host in grouped)
             {
                 host.Rank = rank++;
+                if (host.Rank <= TopHostsCount)
+                {
+                    host.RankMarker = "●";
+                    host.RankMarkerColor = host.Rank switch
+                    {
+                        1 => "#F6C453",
+                        2 => "#B8C0D8",
+                        3 => "#D08A5C",
+                        _ => "#A8B0D9"
+                    };
+                    host.RankMarkerToolTip = host.Rank switch
+                    {
+                        1 => "Топ-1 по среднему D.Q.S среди хостов",
+                        2 => "Топ-2 по среднему D.Q.S среди хостов",
+                        3 => "Топ-3 по среднему D.Q.S среди хостов",
+                        _ => ""
+                    };
+                }
+                else
+                {
+                    host.RankMarker = "";
+                    host.RankMarkerColor = "#A8B0D9";
+                    host.RankMarkerToolTip = "";
+                }
                 HostRatings.Add(host);
             }
 

@@ -7,6 +7,9 @@ namespace VpnSpeedAnalyzer.Models
     /// </summary>
     public class SpeedtestResult
     {
+        /// <summary>Источник запуска замера (manual/auto_host/auto_timer/auto_start)</summary>
+        public string TriggerKind { get; set; } = "";
+
         /// <summary>Внешний IP адрес при тестировании</summary>
         public string Ip { get; set; } = "";
 

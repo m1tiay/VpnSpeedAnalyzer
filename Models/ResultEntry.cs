@@ -5,6 +5,12 @@ namespace VpnSpeedAnalyzer.Models
     /// </summary>
     public class ResultEntry
     {
+        /// <summary>Источник запуска замера (manual/auto_host/auto_timer/auto_start)</summary>
+        public string TriggerKind { get; set; } = "";
+
+        /// <summary>Был ли этот замер последним выполненным</summary>
+        public bool IsLatestMeasurement { get; set; }
+
         /// <summary>Внешний IP адрес</summary>
         public string Ip { get; set; } = "";
 
@@ -43,5 +49,8 @@ namespace VpnSpeedAnalyzer.Models
 
         /// <summary>HEX-цвет маркера в таблице рейтинга</summary>
         public string RankMarkerColor { get; set; } = "#A8B0D9";
+
+        /// <summary>Подсказка для маркера в таблице мониторинга</summary>
+        public string RankMarkerToolTip { get; set; } = "";
     }
 }
