@@ -11,7 +11,7 @@ namespace VpnSpeedAnalyzer
     public partial class AboutWindow : Window
     {
         private const string ProjectUrl = "https://github.com/m1tiay/VpnSpeedAnalyzer";
-        private const string ReleaseUrl = "https://github.com/m1tiay/VpnSpeedAnalyzer/releases/tag/v1.0.0";
+        private const string ReleaseUrl = "https://github.com/m1tiay/VpnSpeedAnalyzer/releases/tag/v1.1.0";
 
         public string AppVersion { get; }
         public string ReleaseNotes { get; }
