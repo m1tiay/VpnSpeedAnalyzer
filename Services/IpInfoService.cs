@@ -33,11 +33,12 @@ namespace VpnSpeedAnalyzer.Services
             Logger.Write("IpInfoService конструктор вызван");
         }
 
-        public async Task<IpInfo?> GetCurrentAsync()
+        public async Task<IpInfo?> GetCurrentAsync(string? targetIp = null)
         {
             try
             {
-                var primaryResult = await TryGetFromIpWhoIsAsync().ConfigureAwait(false);
+                var normalizedTargetIp = string.IsNullOrWhiteSpace(targetIp) ? null : targetIp.Trim();
+                var primaryResult = await TryGetFromIpWhoIsAsync(normalizedTargetIp).ConfigureAwait(false);
                 if (primaryResult != null)
                 {
                     LastSourceName = "ipwho.is";
@@ -47,7 +48,7 @@ namespace VpnSpeedAnalyzer.Services
 
                 Logger.Write("Основной канал ipwho.is не вернул результат, пробуем резервный ipapi.co");
 
-                var fallbackResult = await TryGetFromIpApiAsync().ConfigureAwait(false);
+                var fallbackResult = await TryGetFromIpApiAsync(normalizedTargetIp).ConfigureAwait(false);
                 if (fallbackResult != null)
                 {
                     LastSourceName = "ipapi.co";
@@ -85,11 +86,12 @@ namespace VpnSpeedAnalyzer.Services
             }
         }
 
-        private static async Task<IpInfo?> TryGetFromIpWhoIsAsync()
+        private static async Task<IpInfo?> TryGetFromIpWhoIsAsync(string? targetIp)
         {
             try
             {
-                var json = await SendGetStringAsync(PrimaryIpApiUrl, "ipwho.is").ConfigureAwait(false);
+                var url = string.IsNullOrWhiteSpace(targetIp) ? PrimaryIpApiUrl : $"{PrimaryIpApiUrl}{targetIp}";
+                var json = await SendGetStringAsync(url, "ipwho.is").ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(json))
                     return null;
 
@@ -129,11 +131,12 @@ namespace VpnSpeedAnalyzer.Services
             }
         }
 
-        private static async Task<IpInfo?> TryGetFromIpApiAsync()
+        private static async Task<IpInfo?> TryGetFromIpApiAsync(string? targetIp)
         {
             try
             {
-                var json = await SendGetStringAsync(FallbackIpApiUrl, "ipapi.co").ConfigureAwait(false);
+                var url = string.IsNullOrWhiteSpace(targetIp) ? FallbackIpApiUrl : $"https://ipapi.co/{targetIp}/json/";
+                var json = await SendGetStringAsync(url, "ipapi.co").ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(json))
                     return null;
 

@@ -1096,11 +1096,17 @@ namespace VpnSpeedAnalyzer
             }
 
             var grouped = Results
-                .GroupBy(r => $"{r.Ip}|{r.Country}")
+                .GroupBy(r => NormalizeCountryKey(r.Country))
                 .Select(g =>
                 {
                     var list = g.ToList();
                     var sampleCount = list.Count;
+                    var distinctIps = list
+                        .Select(x => x.Ip)
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
                     var best = list.Max(x => x.Score);
                     var avgScore = Math.Round(list.Average(x => x.Score), 2);
                     var avgPing = Math.Round(list.Average(x => x.Ping), 2);
@@ -1109,11 +1115,17 @@ namespace VpnSpeedAnalyzer
                     var avgDl = Math.Round(list.Average(x => x.Download), 2);
                     var avgUl = Math.Round(list.Average(x => x.Upload), 2);
                     var latest = list[0];
+                    var ipDisplay = distinctIps.Count switch
+                    {
+                        0 => "N/A",
+                        1 => distinctIps[0],
+                        _ => $"{distinctIps.Count} IP"
+                    };
 
                     return new HostRatingRow
                     {
-                        Ip = latest.Ip,
-                        Country = latest.Country,
+                        Ip = ipDisplay,
+                        Country = g.Key,
                         Samples = sampleCount,
                         AverageScore = avgScore,
                         BestScore = Math.Round(best, 2),
@@ -1338,6 +1350,14 @@ namespace VpnSpeedAnalyzer
                 return sorted[mid];
 
             return (sorted[mid - 1] + sorted[mid]) / 2.0;
+        }
+
+        private static string NormalizeCountryKey(string? country)
+        {
+            if (string.IsNullOrWhiteSpace(country))
+                return "Unknown";
+
+            return country.Trim();
         }
 
         private void NotifyPropertyChanged(string propertyName) =>

@@ -1032,7 +1032,6 @@
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
                                             <DataGridTextColumn Header="Место" Binding="{Binding Rank}" Width="0.6*" SortMemberPath="Rank"/>
-                                            <DataGridTextColumn Header="IP" Binding="{Binding Ip}" Width="1.2*"/>
                                             <DataGridTextColumn Header="Страна" Binding="{Binding Country}" Width="1*"/>
                                             <DataGridTextColumn Header="Замеры" Binding="{Binding Samples}" Width="0.7*"/>
                                             <DataGridTextColumn Header="Ср. D.Q.S" Binding="{Binding AverageScore, StringFormat=F2}" Width="0.9*"/>

@@ -451,8 +451,8 @@ namespace VpnSpeedAnalyzer.Logic
                                 if (result != null)
                                 {
                                     result.TriggerKind = _pendingTriggerKind;
-                                    // Обогащаем результат геоданными (один HTTP на замер — с текущим выходом в интернет после VPN).
-                                    var geo = await _ipService.GetCurrentAsync().ConfigureAwait(false);
+                                    // Обогащаем результат геоданными по IP конкретного замера.
+                                    var geo = await _ipService.GetCurrentAsync(result.Ip).ConfigureAwait(false);
 
                                     MergeGeoIntoResult(result, geo);
 

@@ -14,9 +14,10 @@ namespace VpnSpeedAnalyzer.Services
         string LastSourceName { get; }
 
         /// <summary>
-        /// Получает текущую информацию об IP адресе асинхронно
+        /// Получает информацию об IP адресе асинхронно.
+        /// Если targetIp не задан, используется текущий egress IP.
         /// </summary>
         /// <returns>Информация об IP адресе или null если запрос не удался</returns>
-        Task<IpInfo?> GetCurrentAsync();
+        Task<IpInfo?> GetCurrentAsync(string? targetIp = null);
     }
 }
