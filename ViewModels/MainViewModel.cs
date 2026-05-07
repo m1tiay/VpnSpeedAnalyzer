@@ -1069,13 +1069,12 @@ namespace VpnSpeedAnalyzer
             var sourceText = triggerKind switch
             {
                 "manual" => "Источник: ручной замер",
-                "auto_host" => "Источник: авто по смене VPN-хоста",
-                "auto_timer" => "Источник: авто по таймеру",
-                _ => "Источник: авто при старте мониторинга"
+                "auto_host" => "Источник: хост-VPN",
+                "auto_timer" => "Источник: таймер",
+                _ => "Источник: старт мониторинга"
             };
 
-            var latestText = isLatest ? "Это последний выполненный замер." : "Это предыдущий замер.";
-            return $"{latestText} {sourceText}";
+            return isLatest ? $"Крайний замер. {sourceText}" : sourceText;
         }
 
 
