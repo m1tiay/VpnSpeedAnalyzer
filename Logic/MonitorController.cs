@@ -49,6 +49,11 @@ namespace VpnSpeedAnalyzer.Logic
 
         private DateTime _lastSpeedtestUtc = DateTime.MinValue;
         private DateTime _lastConfirmedVpnTransportChangeUtc = DateTime.MinValue;
+        private DateTime _lastVpnTickLogUtc = DateTime.MinValue;
+        private int _vpnTailConfirmCount;
+        private int _vpnTailConfirmMaxDelta;
+        private DateTime _vpnTailWindowStartUtc = DateTime.MinValue;
+        private DateTime _vpnTailLastSummaryUtc = DateTime.MinValue;
 
         private bool _forceRunRequested;
         private bool _isMeasurementInFlight;
@@ -245,6 +250,47 @@ namespace VpnSpeedAnalyzer.Logic
             return true;
         }
 
+        private void RecordTailConfirmation(int delta)
+        {
+            var nowUtc = DateTime.UtcNow;
+            if (_vpnTailConfirmCount == 0 || _vpnTailWindowStartUtc == DateTime.MinValue)
+            {
+                _vpnTailWindowStartUtc = nowUtc;
+                _vpnTailConfirmMaxDelta = delta;
+                Logger.Write("VPN transport: TAIL подтверждения идут (лог агрегируется)");
+            }
+
+            _vpnTailConfirmCount++;
+            if (delta > _vpnTailConfirmMaxDelta)
+                _vpnTailConfirmMaxDelta = delta;
+
+            var shouldSummary = _vpnTailLastSummaryUtc == DateTime.MinValue
+                                || (nowUtc - _vpnTailLastSummaryUtc) >= TimeSpan.FromSeconds(30);
+            if (!shouldSummary)
+                return;
+
+            var windowSec = (nowUtc - _vpnTailWindowStartUtc).TotalSeconds;
+            Logger.Write(
+                $"VPN transport: TAIL подтверждений={_vpnTailConfirmCount} за {windowSec:F0}с, maxDelta={_vpnTailConfirmMaxDelta}");
+
+            _vpnTailConfirmCount = 0;
+            _vpnTailConfirmMaxDelta = 0;
+            _vpnTailWindowStartUtc = nowUtc;
+            _vpnTailLastSummaryUtc = nowUtc;
+        }
+
+        private static bool ShouldLogVpnTick(string decisionLog)
+        {
+            if (string.IsNullOrWhiteSpace(decisionLog))
+                return false;
+
+            return decisionLog.StartsWith("значимое изменение", StringComparison.Ordinal)
+                   || decisionLog.StartsWith("debounce", StringComparison.Ordinal)
+                   || decisionLog.StartsWith("cooldown", StringComparison.Ordinal)
+                   || decisionLog.StartsWith("смена подтверждена", StringComparison.Ordinal)
+                   || decisionLog.StartsWith("snapshot", StringComparison.Ordinal);
+        }
+
         private static string ClassifyHostSwitch(int delta)
         {
             return delta >= VpnTransportPrimaryDeltaEndpoints ? "PRIMARY" : "TAIL";
@@ -314,9 +360,40 @@ namespace VpnSpeedAnalyzer.Logic
                         }
                         else
                         {
-                            Logger.Write(
-                                $"VPN transport tick: pid={vpnSnapshot.ProcessId}, conn={vpnSnapshot.ConnectionCount}, " +
-                                $"endpoints={CountFingerprintEndpoints(vpnSnapshot.Fingerprint)}, changed={vpnTransportChanged}, primary={vpnTransportPrimary}, {vpnDecision}");
+                            // Снижаем шум: детальные тики пишем только на “события” и периодически.
+                            // Для TAIL подтверждений используем агрегированный лог.
+                            var nowUtc = DateTime.UtcNow;
+                            var isConfirmedTail = vpnTransportChanged && !vpnTransportPrimary
+                                                  && vpnDecision.StartsWith("смена подтверждена: class=TAIL", StringComparison.Ordinal);
+
+                            if (isConfirmedTail)
+                            {
+                                // Достаём delta из decisionLog (формат фиксированный: "... delta=N, ...")
+                                var deltaToken = "delta=";
+                                var idx = vpnDecision.IndexOf(deltaToken, StringComparison.Ordinal);
+                                if (idx >= 0)
+                                {
+                                    idx += deltaToken.Length;
+                                    var end = vpnDecision.IndexOf(',', idx);
+                                    var raw = end > idx ? vpnDecision.Substring(idx, end - idx) : string.Empty;
+                                    if (int.TryParse(raw, out var d))
+                                        RecordTailConfirmation(d);
+                                }
+                                else
+                                {
+                                    RecordTailConfirmation(0);
+                                }
+                            }
+
+                            var periodic = _lastVpnTickLogUtc == DateTime.MinValue || (nowUtc - _lastVpnTickLogUtc) >= TimeSpan.FromSeconds(5);
+                            var important = vpnTransportPrimary || ShouldLogVpnTick(vpnDecision);
+                            if (important || periodic)
+                            {
+                                Logger.Write(
+                                    $"VPN transport tick: pid={vpnSnapshot.ProcessId}, conn={vpnSnapshot.ConnectionCount}, " +
+                                    $"endpoints={CountFingerprintEndpoints(vpnSnapshot.Fingerprint)}, changed={vpnTransportChanged}, primary={vpnTransportPrimary}, {vpnDecision}");
+                                _lastVpnTickLogUtc = nowUtc;
+                            }
                         }
 
                         var utcNow = DateTime.UtcNow;
@@ -332,10 +409,7 @@ namespace VpnSpeedAnalyzer.Logic
                                               && sinceLastMeasurement < MinAutomaticRunGap;
                         var shouldMeasure = userRequested || (automaticTrigger && !autoGapTooShort);
 
-                        if (vpnTransportChanged && !vpnTransportPrimary)
-                        {
-                            Logger.Write("VPN transport: подтверждена TAIL-волна, автозамер пропущен (триггер только PRIMARY)");
-                        }
+                        // TAIL-волны не триггерят замер; подробный лог по ним агрегируется в RecordTailConfirmation.
 
                         Logger.Write(
                             $"Тик монитора: vpnTransportChanged={vpnTransportChanged}, primary={vpnTransportPrimary}, triggerByHost={vpnTransportChangedForMeasurement}, " +

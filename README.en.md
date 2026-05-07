@@ -22,8 +22,9 @@ connection quality and picking the best host based on real network measurements.
 - **Scoring profiles:** `Universal`, `Gaming`, `Streaming` — change metric weights on the fly.
 - **IP / country / ASN detection:** primary `ipwho.is`, fallback `ipapi.co`.
 - **Reliable measurements:** `speedtest` retries, UI status reporting, clear errors.
+- **VPN host change detection:** PID-based transport fingerprint with `PRIMARY/TAIL` filtering (auto-measurement only on `PRIMARY`).
 - **CSV export:** full results and top-hosts.
-- **Local logs:** stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs` with rotation and cleanup.
+- **Local logs:** one file per process start, daily file cap, and automatic cleanup.
 
 ## D.Q.S metric
 
@@ -89,6 +90,29 @@ To get accurate measurements you need to prepare the environment:
   otherwise external IP, country, ASN and metrics will reflect your real ISP,
   not the VPN. If their traffic bypasses VPN, route and IP changes may not be detected.
 
+## How automatic host-change detection works
+
+The app tracks a transport fingerprint of the selected VPN process (top PID in tunnel traffic):
+
+- It calculates endpoint symmetric difference (`delta`).
+- Detection passes through `debounce` (~2.5s by default) to ignore short spikes.
+- Events are classified as:
+  - `PRIMARY` — large rebuild (usually a real host switch),
+  - `TAIL` — follow-up internal client reshaping.
+- **Auto-measurement is triggered only for `PRIMARY`**.
+- A cooldown is applied after confirmed switches to suppress repeated triggers.
+
+This keeps real host switches detectable while reducing false auto-runs caused by tunnel churn.
+
+## Quick validation on Windows
+
+1. Start monitoring and wait for the startup measurement.
+2. Keep the host unchanged for 1-2 minutes (no extra host-switch auto-runs expected).
+3. Switch host once manually and verify:
+   - log shows `class=PRIMARY`,
+   - exactly one auto-run starts with `смена VPN transport`.
+4. Verify `TAIL` events are logged but do not start measurements.
+
 ## Quick start
 
 1. Clone the repository.
@@ -119,5 +143,9 @@ dotnet publish VpnSpeedAnalyzer.csproj -c Release -r win-x64 --self-contained tr
 
 ## Logs & privacy
 
-- Logs are stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs` (rotation and auto-cleanup).
+- Logs are stored in `%LOCALAPPDATA%\VpnSpeedAnalyzer\logs`.
+- Format: one session file per process start (`app-YYYYMMDD-HHmmss-PID.log`).
+- Retention: files older than `14` days are deleted.
+- Cap: no more than `10` files per day (oldest files are removed first).
+- If a log exceeds `5 MB`, the current session file is trimmed with a `[log-rotated]` marker.
 - Measurements run on the locally installed `speedtest.exe`. External services are only used for IP / country / ASN detection.

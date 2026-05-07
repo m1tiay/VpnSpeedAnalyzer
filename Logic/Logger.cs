@@ -40,6 +40,8 @@ namespace VpnSpeedAnalyzer.Logic
             }
         }
 
+        public static string GetLogDirectory() => LogDir;
+
         private static string GetCurrentLogPath()
         {
             if (!string.IsNullOrWhiteSpace(_sessionLogPath))

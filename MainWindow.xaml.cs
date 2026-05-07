@@ -2,10 +2,12 @@ using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Navigation;
 using VpnSpeedAnalyzer.Logic;
 using VpnSpeedAnalyzer.Models;
 
@@ -205,6 +207,33 @@ namespace VpnSpeedAnalyzer
                 var text = plot.AddText(tags[i], xs[i], ys[i] + 0.02, color: Color.FromArgb(168, 176, 217));
                 text.FontSize = 8;
                 cache.Add(text);
+            }
+        }
+
+        private void ProjectLink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Write($"Не удалось открыть ссылку проекта: {ex.Message}");
+            }
+            e.Handled = true;
+        }
+
+        private void OpenLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dir = Logger.GetLogDirectory();
+                Directory.CreateDirectory(dir);
+                Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Write($"Не удалось открыть папку логов: {ex.Message}");
             }
         }
     }

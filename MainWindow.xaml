@@ -1040,12 +1040,26 @@
             </StackPanel>
 
             <TextBlock Grid.Column="2"
-                       Text="created by daver"
                        HorizontalAlignment="Right"
                        VerticalAlignment="Center"
                        Foreground="{StaticResource MutedTextBrush}"
                        Opacity="0.85"
-                       FontSize="11"/>
+                       FontSize="11">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Padding="6,3"
+                            Margin="0,0,10,0"
+                            ToolTip="Открыть папку логов"
+                            Click="OpenLogs_Click">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="14"/>
+                    </Button>
+                    <TextBlock VerticalAlignment="Center">
+                        <Hyperlink NavigateUri="https://github.com/m1tiay/VpnSpeedAnalyzer"
+                                   RequestNavigate="ProjectLink_RequestNavigate">
+                            created by daver
+                        </Hyperlink>
+                    </TextBlock>
+                </StackPanel>
+            </TextBlock>
         </Grid>
     </Grid>
 </Window>
